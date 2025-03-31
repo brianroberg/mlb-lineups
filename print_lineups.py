@@ -81,6 +81,31 @@ def get_pitcher_details(pitcher_id):
         print(f"Error fetching pitcher details: {e}")
         return None
 
+def get_umpires(game_id):
+    """
+    Fetch umpire information for a game
+    
+    Args:
+        game_id (int): The game ID
+        
+    Returns:
+        list: Umpire information including names and positions
+    """
+    url = f"https://statsapi.mlb.com/api/v1/game/{game_id}/boxscore"
+    
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        
+        if 'officials' in data and data['officials']:
+            return data['officials']
+        else:
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching umpire data: {e}")
+        return None
+
 def get_probable_pitchers(game_id, status):
     """
     Fetch the probable starting pitchers for a game
@@ -249,6 +274,10 @@ def main():
     print("Fetching starting pitchers...")
     pitchers = get_probable_pitchers(game_id, game_status)
     
+    # Get umpire information
+    print("Fetching umpire information...")
+    umpires = get_umpires(game_id)
+    
     # Print the lineups
     date_header = "TODAY'S GAME" if args.date is None else f"GAME FOR {args.date}"
     print(f"\n===== {date_header} =====")
@@ -285,6 +314,15 @@ def main():
             print(f"{pitchers['opponent_team']}: {jersey_display}{pitchers['opponent']['name']}{throws}")
         else:
             print(f"{pitchers['opponent_team']}: Starting pitcher information not available")
+    
+    # Print umpire information if available
+    if umpires:
+        print("\n----- UMPIRES -----")
+        for umpire in umpires:
+            if 'official' in umpire and 'officialType' in umpire:
+                name = umpire['official'].get('fullName', '')
+                position = umpire['officialType']
+                print(f"{position}: {name}")
 
 if __name__ == "__main__":
     main()
