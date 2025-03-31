@@ -15,8 +15,8 @@ def get_mets_game(date=None):
         eastern = pytz.timezone('US/Eastern')
         date = datetime.now(eastern).strftime('%Y-%m-%d')
     
-    # MLB Stats API endpoint for the schedule
-    url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={date}&teamId=121"
+    # MLB Stats API endpoint for the schedule with venue information
+    url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={date}&teamId=121&hydrate=venue"
     
     try:
         response = requests.get(url)
@@ -25,15 +25,21 @@ def get_mets_game(date=None):
         
         # Check if there are any games today
         if data['totalGames'] == 0:
-            return None, "No Mets game scheduled for today."
+            return None, None, "No Mets game scheduled for today."
         
-        # Get the game ID from the first (and likely only) game
-        game_id = data['dates'][0]['games'][0]['gamePk']
-        game_status = data['dates'][0]['games'][0]['status']['detailedState']
+        # Get the game information from the first (and likely only) game
+        game = data['dates'][0]['games'][0]
+        game_id = game['gamePk']
+        game_status = game['status']['detailedState']
         
-        return game_id, game_status
+        # Get venue information if available
+        venue_name = None
+        if 'venue' in game and 'name' in game['venue']:
+            venue_name = game['venue']['name']
+        
+        return game_id, game_status, venue_name
     except requests.exceptions.RequestException as e:
-        return None, f"Error fetching game data: {e}"
+        return None, None, f"Error fetching game data: {e}"
 
 def get_pitcher_details(pitcher_id):
     """
@@ -218,7 +224,7 @@ def main():
     
     date_str = "today's" if args.date is None else f"the {args.date}"
     print(f"Fetching {date_str} Mets game information...")
-    game_id, game_status = get_mets_game(args.date)
+    game_id, game_status, venue_name = get_mets_game(args.date)
     
     if game_id is None:
         print(game_status)
@@ -247,6 +253,8 @@ def main():
     date_header = "TODAY'S GAME" if args.date is None else f"GAME FOR {args.date}"
     print(f"\n===== {date_header} =====")
     print(f"{lineup_data['mets']['team']} vs {lineup_data['opponent']['team']}")
+    if venue_name:
+        print(f"Ballpark: {venue_name}")
     
     print("\n----- METS LINEUP -----")
     for player in lineup_data['mets']['lineup']:
