@@ -74,7 +74,8 @@ def get_lineup(game_id):
             mets_lineup.append({
                 'name': player['person']['fullName'],
                 'position': position,
-                'batting_order': len(mets_lineup) + 1
+                'batting_order': len(mets_lineup) + 1,
+                'jersey': player.get('jerseyNumber', '')
             })
         
         # Get opponent lineup
@@ -86,7 +87,8 @@ def get_lineup(game_id):
             opponent_lineup.append({
                 'name': player['person']['fullName'],
                 'position': position,
-                'batting_order': len(opponent_lineup) + 1
+                'batting_order': len(opponent_lineup) + 1,
+                'jersey': player.get('jerseyNumber', '')
             })
         
         return {
@@ -140,11 +142,13 @@ def main():
     
     print("\n----- METS LINEUP -----")
     for player in lineup_data['mets']['lineup']:
-        print(f"{player['batting_order']}. {player['name']} ({player['position']})")
+        jersey_display = f"#{player['jersey']} " if player['jersey'] else ''
+        print(f"{player['batting_order']}. {jersey_display}{player['name']} ({player['position']})")
     
     print("\n----- OPPONENT LINEUP -----")
     for player in lineup_data['opponent']['lineup']:
-        print(f"{player['batting_order']}. {player['name']} ({player['position']})")
+        jersey_display = f"#{player['jersey']} " if player['jersey'] else ''
+        print(f"{player['batting_order']}. {jersey_display}{player['name']} ({player['position']})")
 
 if __name__ == "__main__":
     main()
