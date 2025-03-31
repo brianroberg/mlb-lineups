@@ -35,6 +35,110 @@ def get_mets_game(date=None):
     except requests.exceptions.RequestException as e:
         return None, f"Error fetching game data: {e}"
 
+def get_pitcher_details(pitcher_id):
+    """
+    Fetch detailed information about a pitcher from the MLB Stats API
+    
+    Args:
+        pitcher_id (int): The MLB ID of the pitcher
+        
+    Returns:
+        dict: Pitcher details including name, jersey number, and handedness
+    """
+    url = f"https://statsapi.mlb.com/api/v1/people/{pitcher_id}"
+    
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        
+        if not data.get('people'):
+            return None
+            
+        person = data['people'][0]
+        details = {
+            'name': person.get('fullName', ''),
+            'jersey': person.get('primaryNumber', ''),
+            'throws': person.get('pitchHand', {}).get('code', '')
+        }
+        
+        # Expand throws code to descriptive text
+        if details['throws'] == 'R':
+            details['throws_desc'] = 'Right'
+        elif details['throws'] == 'L':
+            details['throws_desc'] = 'Left'
+        else:
+            details['throws_desc'] = 'Unknown'
+            
+        return details
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching pitcher details: {e}")
+        return None
+
+def get_probable_pitchers(game_id, status):
+    """
+    Fetch the probable starting pitchers for a game
+    
+    Args:
+        game_id (int): The game ID
+        status (str): The game status
+        
+    Returns:
+        dict: Pitcher information for both teams
+    """
+    # For completed games, we need to check the boxscore
+    url = f"https://statsapi.mlb.com/api/v1/game/{game_id}/boxscore"
+    
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Get the teams data
+        teams = data['teams']
+        
+        # Find which side the Mets are on (home or away)
+        mets_side = 'home' if teams['home']['team']['id'] == 121 else 'away'
+        opponent_side = 'away' if mets_side == 'home' else 'home'
+        
+        # Initialize pitcher data
+        pitchers = {
+            'mets': None,
+            'opponent': None,
+            'mets_team': teams[mets_side]['team']['name'],
+            'opponent_team': teams[opponent_side]['team']['name']
+        }
+        
+        # For each team, try to find the starting pitcher
+        sides = {'mets': mets_side, 'opponent': opponent_side}
+        
+        for team_key, side in sides.items():
+            # Find pitcher with the most innings pitched (likely the starter)
+            max_innings = 0
+            pitcher_id = None
+            
+            for player_id, player in teams[side]['players'].items():
+                if player['position']['abbreviation'] == 'P':
+                    # If game is completed, look for the pitcher who pitched
+                    if status in ["Final", "In Progress"] and 'stats' in player and 'pitching' in player['stats']:
+                        try:
+                            # Try to parse innings pitched (could be a string like "6.0" or an int)
+                            innings = float(player['stats']['pitching'].get('inningsPitched', 0))
+                            if innings > max_innings:
+                                max_innings = innings
+                                pitcher_id = player['person']['id']
+                        except (ValueError, TypeError):
+                            pass
+            
+            # If we found a pitcher, get their details
+            if pitcher_id:
+                pitchers[team_key] = get_pitcher_details(pitcher_id)
+                
+        return pitchers
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching probable pitchers: {e}")
+        return None
+
 def get_lineup(game_id):
     """
     Fetch the starting lineup for a specific game
@@ -135,6 +239,10 @@ def main():
         print(error)
         return
     
+    # Get starting pitchers
+    print("Fetching starting pitchers...")
+    pitchers = get_probable_pitchers(game_id, game_status)
+    
     # Print the lineups
     date_header = "TODAY'S GAME" if args.date is None else f"GAME FOR {args.date}"
     print(f"\n===== {date_header} =====")
@@ -149,6 +257,26 @@ def main():
     for player in lineup_data['opponent']['lineup']:
         jersey_display = f"#{player['jersey']} " if player['jersey'] else ''
         print(f"{player['batting_order']}. {jersey_display}{player['name']} ({player['position']})")
+    
+    # Print starting pitchers if available
+    if pitchers:
+        print("\n----- STARTING PITCHERS -----")
+        
+        # Mets pitcher
+        if pitchers['mets']:
+            jersey_display = f"#{pitchers['mets']['jersey']} " if pitchers['mets'].get('jersey') else ''
+            throws = f" ({pitchers['mets']['throws_desc']})" if pitchers['mets'].get('throws_desc') else ''
+            print(f"{pitchers['mets_team']}: {jersey_display}{pitchers['mets']['name']}{throws}")
+        else:
+            print(f"{pitchers['mets_team']}: Starting pitcher information not available")
+            
+        # Opponent pitcher
+        if pitchers['opponent']:
+            jersey_display = f"#{pitchers['opponent']['jersey']} " if pitchers['opponent'].get('jersey') else ''
+            throws = f" ({pitchers['opponent']['throws_desc']})" if pitchers['opponent'].get('throws_desc') else ''
+            print(f"{pitchers['opponent_team']}: {jersey_display}{pitchers['opponent']['name']}{throws}")
+        else:
+            print(f"{pitchers['opponent_team']}: Starting pitcher information not available")
 
 if __name__ == "__main__":
     main()
