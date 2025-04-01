@@ -1,0 +1,91 @@
+{
+  "copyright": "Copyright 2025 MLB Advanced Media, L.P.",
+  "totalItems": 1,
+  "totalEvents": 0,
+  "totalGames": 1,
+  "totalGamesInProgress": 0,
+  "dates": [
+    {
+      "date": "2025-03-28",
+      "totalItems": 1,
+      "totalEvents": 0,
+      "totalGames": 1,
+      "totalGamesInProgress": 0,
+      "games": [
+        {
+          "gamePk": 778518,
+          "link": "/api/v1.1/game/778518/feed/live",
+          "gameType": "R",
+          "season": "2025",
+          "gameDate": "2025-03-28T17:10:00Z",
+          "officialDate": "2025-03-28",
+          "status": {
+            "abstractGameState": "Final",
+            "codedGameState": "F",
+            "detailedState": "Final",
+            "statusCode": "F",
+            "startTimeTBD": false,
+            "abstractGameCode": "F"
+          },
+          "teams": {
+            "away": {
+              "leagueRecord": {
+                "wins": 0,
+                "losses": 1,
+                "pct": ".000"
+              },
+              "score": 2,
+              "team": {
+                "id": 121,
+                "name": "New York Mets",
+                "link": "/api/v1/teams/121"
+              },
+              "splitSquad": false,
+              "seriesNumber": 1
+            },
+            "home": {
+              "leagueRecord": {
+                "wins": 1,
+                "losses": 0,
+                "pct": "1.000"
+              },
+              "score": 5,
+              "team": {
+                "id": 117,
+                "name": "Houston Astros",
+                "link": "/api/v1/teams/117"
+              },
+              "splitSquad": false,
+              "seriesNumber": 1
+            }
+          },
+          "venue": {
+            "id": 2392,
+            "name": "Daikin Park",
+            "link": "/api/v1/venues/2392",
+            "active": true,
+            "season": "2025"
+          },
+          "content": {
+            "link": "/api/v1/game/778518/content"
+          },
+          "isTie": false,
+          "gameNumber": 1,
+          "publicFacing": true,
+          "doubleHeader": "N",
+          "gamedayType": "P",
+          "tiebreaker": "N",
+          "calendarEventID": "14-778518-2025-03-28",
+          "seasonDisplay": "2025",
+          "dayNight": "day",
+          "scheduledInnings": 9,
+          "inningBreakLength": 120,
+          "gamesInSeries": 3,
+          "seriesGameNumber": 1,
+          "seriesDescription": "Regular Season"
+        }
+      ],
+      "events": []
+    }
+  ]
+}

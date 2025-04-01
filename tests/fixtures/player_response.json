@@ -1,0 +1,39 @@
+{
+  "copyright": "Copyright 2025 MLB Advanced Media, L.P.",
+  "people": [
+    {
+      "id": 123456,
+      "fullName": "Test Pitcher",
+      "firstName": "Test",
+      "lastName": "Pitcher",
+      "primaryNumber": "21",
+      "currentAge": 30,
+      "birthDate": "1995-01-01",
+      "height": "6' 2\"",
+      "weight": 215,
+      "active": true,
+      "primaryPosition": {
+        "code": "1",
+        "name": "Pitcher",
+        "type": "Pitcher",
+        "abbreviation": "P"
+      },
+      "useName": "Test",
+      "mlbDebutDate": "2017-04-05",
+      "batSide": {
+        "code": "R",
+        "description": "Right"
+      },
+      "pitchHand": {
+        "code": "R",
+        "description": "Right"
+      },
+      "nameFirstLast": "Test Pitcher",
+      "nameSlug": "test-pitcher-123456",
+      "firstLastName": "Test Pitcher",
+      "lastFirstName": "Pitcher, Test",
+      "lastInitName": "Pitcher, T",
+      "initLastName": "T. Pitcher"
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import requests
 from datetime import datetime
 import pytz
 import argparse
+import sys
 
 # MLB team abbreviations to team IDs mapping
 MLB_TEAMS = {
@@ -110,9 +111,9 @@ def get_pitcher_details(pitcher_id):
         
         # Expand throws code to descriptive text
         if details['throws'] == 'R':
-            details['throws_desc'] = 'Right'
+            details['throws_desc'] = 'RHP'
         elif details['throws'] == 'L':
-            details['throws_desc'] = 'Left'
+            details['throws_desc'] = 'LHP'
         else:
             details['throws_desc'] = 'Unknown'
             
@@ -298,7 +299,7 @@ def main():
     team_abbr = args.team.upper()
     if team_abbr not in MLB_TEAMS:
         print(f"Error: Invalid team abbreviation '{team_abbr}'. Valid options are: {', '.join(sorted(MLB_TEAMS.keys()))}")
-        return
+        sys.exit(1)
     
     team_id = MLB_TEAMS[team_abbr]
     
@@ -308,7 +309,7 @@ def main():
     
     if game_id is None:
         print(game_status)
-        return
+        sys.exit(1)
     
     print(f"Found game (ID: {game_id}), Status: {game_status}")
     
@@ -323,7 +324,7 @@ def main():
     
     if error:
         print(error)
-        return
+        sys.exit(1)
     
     # Get starting pitchers
     print("Fetching starting pitchers...")
@@ -380,4 +381,9 @@ def main():
                 print(f"{position}: {name}")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+        sys.exit(0)
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)

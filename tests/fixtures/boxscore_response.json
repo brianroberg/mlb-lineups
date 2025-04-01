@@ -1,0 +1,238 @@
+{
+  "copyright": "Copyright 2025 MLB Advanced Media, L.P.",
+  "teams": {
+    "away": {
+      "team": {
+        "id": 121,
+        "name": "New York Mets",
+        "link": "/api/v1/teams/121"
+      },
+      "battingOrder": [
+        569577,
+        656941,
+        502117,
+        664285
+      ],
+      "players": {
+        "ID569577": {
+          "person": {
+            "id": 569577,
+            "fullName": "Brandon Nimmo",
+            "link": "/api/v1/people/569577",
+            "boxscoreName": "Nimmo"
+          },
+          "jerseyNumber": "9",
+          "position": {
+            "code": "8",
+            "name": "Outfielder",
+            "type": "Outfielder",
+            "abbreviation": "CF"
+          },
+          "status": {
+            "code": "A",
+            "description": "Active"
+          },
+          "parentTeamId": 121,
+          "stats": {
+            "batting": {
+              "gamesPlayed": 1,
+              "atBats": 4,
+              "runs": 0,
+              "hits": 1,
+              "doubles": 0,
+              "triples": 0,
+              "homeRuns": 0,
+              "rbi": 0,
+              "baseOnBalls": 0,
+              "strikeOuts": 2,
+              "avg": ".250",
+              "obp": ".250",
+              "slg": ".250",
+              "ops": ".500"
+            },
+            "fielding": { }
+          },
+          "seasonStats": {
+            "batting": { },
+            "fielding": { }
+          }
+        },
+        "ID656941": {
+          "person": {
+            "id": 656941,
+            "fullName": "Francisco Lindor",
+            "link": "/api/v1/people/656941",
+            "boxscoreName": "Lindor"
+          },
+          "jerseyNumber": "12",
+          "position": {
+            "code": "6",
+            "name": "Shortstop",
+            "type": "Infielder",
+            "abbreviation": "SS"
+          },
+          "status": {
+            "code": "A",
+            "description": "Active"
+          },
+          "parentTeamId": 121,
+          "stats": {
+            "batting": { },
+            "fielding": { }
+          },
+          "seasonStats": {
+            "batting": { },
+            "fielding": { }
+          }
+        },
+        "ID502117": {
+          "person": {
+            "id": 502117,
+            "fullName": "Pete Alonso",
+            "link": "/api/v1/people/502117",
+            "boxscoreName": "Alonso"
+          },
+          "jerseyNumber": "20",
+          "position": {
+            "code": "3",
+            "name": "First Base",
+            "type": "Infielder",
+            "abbreviation": "1B"
+          },
+          "status": {
+            "code": "A",
+            "description": "Active"
+          },
+          "parentTeamId": 121,
+          "stats": {
+            "batting": { },
+            "fielding": { }
+          },
+          "seasonStats": {
+            "batting": { },
+            "fielding": { }
+          }
+        }
+      }
+    },
+    "home": {
+      "team": {
+        "id": 117,
+        "name": "Houston Astros",
+        "link": "/api/v1/teams/117"
+      },
+      "battingOrder": [
+        665161,
+        664285
+      ],
+      "players": {
+        "ID665161": {
+          "person": {
+            "id": 665161,
+            "fullName": "Jeremy Peña",
+            "link": "/api/v1/people/665161",
+            "boxscoreName": "Peña"
+          },
+          "jerseyNumber": "3",
+          "position": {
+            "code": "6",
+            "name": "Shortstop",
+            "type": "Infielder",
+            "abbreviation": "SS"
+          },
+          "status": {
+            "code": "A",
+            "description": "Active"
+          },
+          "parentTeamId": 117,
+          "stats": {
+            "batting": { },
+            "fielding": { }
+          },
+          "seasonStats": {
+            "batting": { },
+            "fielding": { }
+          }
+        },
+        "ID664285": {
+          "person": {
+            "id": 664285,
+            "fullName": "Framber Valdez",
+            "link": "/api/v1/people/664285",
+            "boxscoreName": "Valdez, F"
+          },
+          "jerseyNumber": "59",
+          "position": {
+            "code": "1",
+            "name": "Pitcher",
+            "type": "Pitcher",
+            "abbreviation": "P"
+          },
+          "status": {
+            "code": "A",
+            "description": "Active"
+          },
+          "parentTeamId": 117,
+          "stats": {
+            "pitching": {
+              "gamesPlayed": 1,
+              "gamesStarted": 1,
+              "inningsPitched": "6.0",
+              "strikeOuts": 8,
+              "wins": 1,
+              "losses": 0,
+              "era": "0.00"
+            }
+          },
+          "seasonStats": {
+            "pitching": { }
+          }
+        }
+      }
+    }
+  },
+  "officials": [
+    {
+      "official": {
+        "id": 427128,
+        "fullName": "Rob Drake",
+        "link": "/api/v1/people/427128"
+      },
+      "officialType": "Home Plate"
+    },
+    {
+      "official": {
+        "id": 596740,
+        "fullName": "Jansen Visconti",
+        "link": "/api/v1/people/596740"
+      },
+      "officialType": "First Base"
+    },
+    {
+      "official": {
+        "id": 623946,
+        "fullName": "Malachi Moore",
+        "link": "/api/v1/people/623946"
+      },
+      "officialType": "Second Base"
+    },
+    {
+      "official": {
+        "id": 427164,
+        "fullName": "Andy Fletcher",
+        "link": "/api/v1/people/427164"
+      },
+      "officialType": "Third Base"
+    }
+  ],
+  "info": [
+    {
+      "label": "Venue",
+      "value": "Daikin Park"
+    },
+    {
+      "label": "Umpires",
+      "value": "HP: Rob Drake. 1B: Jansen Visconti. 2B: Malachi Moore. 3B: Andy Fletcher. "
+    }
+  ]
+}
