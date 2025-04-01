@@ -3,11 +3,46 @@ from datetime import datetime
 import pytz
 import argparse
 
-def get_mets_game(date=None):
+# MLB team abbreviations to team IDs mapping
+MLB_TEAMS = {
+    "ARI": 109,  # Arizona Diamondbacks
+    "ATL": 144,  # Atlanta Braves
+    "BAL": 110,  # Baltimore Orioles
+    "BOS": 111,  # Boston Red Sox
+    "CHC": 112,  # Chicago Cubs
+    "CIN": 113,  # Cincinnati Reds
+    "CLE": 114,  # Cleveland Guardians
+    "COL": 115,  # Colorado Rockies
+    "CWS": 145,  # Chicago White Sox
+    "DET": 116,  # Detroit Tigers
+    "HOU": 117,  # Houston Astros
+    "KC": 118,   # Kansas City Royals
+    "LAA": 108,  # Los Angeles Angels
+    "LAD": 119,  # Los Angeles Dodgers
+    "MIA": 146,  # Miami Marlins
+    "MIL": 158,  # Milwaukee Brewers
+    "MIN": 142,  # Minnesota Twins
+    "NYM": 121,  # New York Mets
+    "NYY": 147,  # New York Yankees
+    "OAK": 133,  # Oakland Athletics
+    "PHI": 143,  # Philadelphia Phillies
+    "PIT": 134,  # Pittsburgh Pirates
+    "SD": 135,   # San Diego Padres
+    "SEA": 136,  # Seattle Mariners
+    "SF": 137,   # San Francisco Giants
+    "STL": 138,  # St. Louis Cardinals
+    "TB": 139,   # Tampa Bay Rays
+    "TEX": 140,  # Texas Rangers
+    "TOR": 141,  # Toronto Blue Jays
+    "WSH": 120,  # Washington Nationals
+}
+
+def get_team_game(team_id, date=None):
     """
-    Fetch Mets game information from the MLB Stats API for a specific date
+    Fetch a team's game information from the MLB Stats API for a specific date
     
     Args:
+        team_id (int): The MLB team ID
         date (str, optional): Date in YYYY-MM-DD format. Defaults to today's date.
     """
     # Get today's date in the format required by the API (YYYY-MM-DD) if not provided
@@ -16,30 +51,35 @@ def get_mets_game(date=None):
         date = datetime.now(eastern).strftime('%Y-%m-%d')
     
     # MLB Stats API endpoint for the schedule with venue information
-    url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={date}&teamId=121&hydrate=venue"
+    url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={date}&teamId={team_id}&hydrate=venue"
     
     try:
         response = requests.get(url)
         response.raise_for_status()
         data = response.json()
         
-        # Check if there are any games today
+        # Check if there are any games for the specified date
         if data['totalGames'] == 0:
-            return None, None, "No Mets game scheduled for today."
+            return None, None, None, "No game scheduled for the selected team on this date."
         
         # Get the game information from the first (and likely only) game
         game = data['dates'][0]['games'][0]
         game_id = game['gamePk']
         game_status = game['status']['detailedState']
         
+        # Get team names for both teams
+        home_team = game['teams']['home']['team']['name']
+        away_team = game['teams']['away']['team']['name']
+        team_names = {'home': home_team, 'away': away_team}
+        
         # Get venue information if available
         venue_name = None
         if 'venue' in game and 'name' in game['venue']:
             venue_name = game['venue']['name']
         
-        return game_id, game_status, venue_name
+        return game_id, game_status, venue_name, team_names
     except requests.exceptions.RequestException as e:
-        return None, None, f"Error fetching game data: {e}"
+        return None, None, None, f"Error fetching game data: {e}"
 
 def get_pitcher_details(pitcher_id):
     """
@@ -106,13 +146,14 @@ def get_umpires(game_id):
         print(f"Error fetching umpire data: {e}")
         return None
 
-def get_probable_pitchers(game_id, status):
+def get_probable_pitchers(game_id, status, team_id):
     """
     Fetch the probable starting pitchers for a game
     
     Args:
         game_id (int): The game ID
         status (str): The game status
+        team_id (int): The MLB team ID for the team of interest
         
     Returns:
         dict: Pitcher information for both teams
@@ -128,20 +169,20 @@ def get_probable_pitchers(game_id, status):
         # Get the teams data
         teams = data['teams']
         
-        # Find which side the Mets are on (home or away)
-        mets_side = 'home' if teams['home']['team']['id'] == 121 else 'away'
-        opponent_side = 'away' if mets_side == 'home' else 'home'
+        # Find which side our team is on (home or away)
+        team_side = 'home' if teams['home']['team']['id'] == team_id else 'away'
+        opponent_side = 'away' if team_side == 'home' else 'home'
         
         # Initialize pitcher data
         pitchers = {
-            'mets': None,
+            'team': None,
             'opponent': None,
-            'mets_team': teams[mets_side]['team']['name'],
+            'team_name': teams[team_side]['team']['name'],
             'opponent_team': teams[opponent_side]['team']['name']
         }
         
         # For each team, try to find the starting pitcher
-        sides = {'mets': mets_side, 'opponent': opponent_side}
+        sides = {'team': team_side, 'opponent': opponent_side}
         
         for team_key, side in sides.items():
             # Find pitcher with the most innings pitched (likely the starter)
@@ -170,9 +211,13 @@ def get_probable_pitchers(game_id, status):
         print(f"Error fetching probable pitchers: {e}")
         return None
 
-def get_lineup(game_id):
+def get_lineup(game_id, team_id):
     """
     Fetch the starting lineup for a specific game
+    
+    Args:
+        game_id (int): The game ID
+        team_id (int): The MLB team ID for the team of interest
     """
     url = f"https://statsapi.mlb.com/api/v1/game/{game_id}/boxscore"
     
@@ -184,32 +229,32 @@ def get_lineup(game_id):
         # Get the teams data
         teams = data['teams']
         
-        # Find which side the Mets are on (home or away)
-        mets_side = 'home' if teams['home']['team']['id'] == 121 else 'away'
-        opponent_side = 'away' if mets_side == 'home' else 'home'
+        # Find which side our team is on (home or away)
+        team_side = 'home' if teams['home']['team']['id'] == team_id else 'away'
+        opponent_side = 'away' if team_side == 'home' else 'home'
         
-        # Get the Mets and opponent team info
-        mets_team = teams[mets_side]
+        # Get the team info for both sides
+        our_team = teams[team_side]
         opponent_team = teams[opponent_side]
         
         # Extract lineups if available
-        mets_lineup = []
+        team_lineup = []
         opponent_lineup = []
         
         # Check if lineups are available
-        if 'battingOrder' not in mets_team or not mets_team['battingOrder']:
+        if 'battingOrder' not in our_team or not our_team['battingOrder']:
             return None, f"Lineup not yet available for this game against {opponent_team['team']['name']}"
         
-        # Get Mets lineup
-        for player_id in mets_team['battingOrder']:
+        # Get our team's lineup
+        for player_id in our_team['battingOrder']:
             if player_id == 0:  # Sometimes there are zeros in the batting order
                 continue
-            player = mets_team['players'][f'ID{player_id}']
+            player = our_team['players'][f'ID{player_id}']
             position = player['position']['abbreviation']
-            mets_lineup.append({
+            team_lineup.append({
                 'name': player['person']['fullName'],
                 'position': position,
-                'batting_order': len(mets_lineup) + 1,
+                'batting_order': len(team_lineup) + 1,
                 'jersey': player.get('jerseyNumber', '')
             })
         
@@ -227,9 +272,9 @@ def get_lineup(game_id):
             })
         
         return {
-            'mets': {
-                'team': mets_team['team']['name'],
-                'lineup': mets_lineup
+            'team': {
+                'name': our_team['team']['name'],
+                'lineup': team_lineup
             },
             'opponent': {
                 'team': opponent_team['team']['name'],
@@ -243,13 +288,23 @@ def get_lineup(game_id):
 
 def main():
     # Set up command line argument parsing
-    parser = argparse.ArgumentParser(description='Fetch MLB lineup information for the Mets')
+    parser = argparse.ArgumentParser(description='Fetch MLB lineup information')
     parser.add_argument('--date', type=str, help='Game date in YYYY-MM-DD format (default: today)')
+    parser.add_argument('--team', type=str, default='NYM', 
+                       help='Team abbreviation (default: NYM). Examples: NYM, STL, LAD, NYY, etc.')
     args = parser.parse_args()
     
+    # Convert team abbreviation to uppercase and validate
+    team_abbr = args.team.upper()
+    if team_abbr not in MLB_TEAMS:
+        print(f"Error: Invalid team abbreviation '{team_abbr}'. Valid options are: {', '.join(sorted(MLB_TEAMS.keys()))}")
+        return
+    
+    team_id = MLB_TEAMS[team_abbr]
+    
     date_str = "today's" if args.date is None else f"the {args.date}"
-    print(f"Fetching {date_str} Mets game information...")
-    game_id, game_status, venue_name = get_mets_game(args.date)
+    print(f"Fetching {date_str} {team_abbr} game information...")
+    game_id, game_status, venue_name, team_names = get_team_game(team_id, args.date)
     
     if game_id is None:
         print(game_status)
@@ -264,7 +319,7 @@ def main():
         print("Note: This is a completed game. If lineups aren't available, the API may not have stored them.")
     
     print("Fetching lineup information...")
-    lineup_data, error = get_lineup(game_id)
+    lineup_data, error = get_lineup(game_id, team_id)
     
     if error:
         print(error)
@@ -272,7 +327,7 @@ def main():
     
     # Get starting pitchers
     print("Fetching starting pitchers...")
-    pitchers = get_probable_pitchers(game_id, game_status)
+    pitchers = get_probable_pitchers(game_id, game_status, team_id)
     
     # Get umpire information
     print("Fetching umpire information...")
@@ -281,12 +336,12 @@ def main():
     # Print the lineups
     date_header = "TODAY'S GAME" if args.date is None else f"GAME FOR {args.date}"
     print(f"\n===== {date_header} =====")
-    print(f"{lineup_data['mets']['team']} vs {lineup_data['opponent']['team']}")
+    print(f"{lineup_data['team']['name']} vs {lineup_data['opponent']['team']}")
     if venue_name:
         print(f"Ballpark: {venue_name}")
     
-    print("\n----- METS LINEUP -----")
-    for player in lineup_data['mets']['lineup']:
+    print(f"\n----- {team_abbr} LINEUP -----")
+    for player in lineup_data['team']['lineup']:
         jersey_display = f"#{player['jersey']} " if player['jersey'] else ''
         print(f"{player['batting_order']}. {jersey_display}{player['name']} ({player['position']})")
     
@@ -299,13 +354,13 @@ def main():
     if pitchers:
         print("\n----- STARTING PITCHERS -----")
         
-        # Mets pitcher
-        if pitchers['mets']:
-            jersey_display = f"#{pitchers['mets']['jersey']} " if pitchers['mets'].get('jersey') else ''
-            throws = f" ({pitchers['mets']['throws_desc']})" if pitchers['mets'].get('throws_desc') else ''
-            print(f"{pitchers['mets_team']}: {jersey_display}{pitchers['mets']['name']}{throws}")
+        # Our team's pitcher
+        if pitchers['team']:
+            jersey_display = f"#{pitchers['team']['jersey']} " if pitchers['team'].get('jersey') else ''
+            throws = f" ({pitchers['team']['throws_desc']})" if pitchers['team'].get('throws_desc') else ''
+            print(f"{pitchers['team_name']}: {jersey_display}{pitchers['team']['name']}{throws}")
         else:
-            print(f"{pitchers['mets_team']}: Starting pitcher information not available")
+            print(f"{pitchers['team_name']}: Starting pitcher information not available")
             
         # Opponent pitcher
         if pitchers['opponent']:
