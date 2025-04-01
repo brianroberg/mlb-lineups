@@ -9,6 +9,7 @@ A command-line tool for displaying MLB game lineups, starting pitchers, and umpi
 - View starting pitchers with jersey numbers and throwing arm (left/right)
 - See game venue and umpire information
 - Specify a date to look up past or future games
+- No scores shown, so no risk of spoilers when watching time-shifted
 
 ## Why I Wrote This
 I enjoy scoring baseball games that I watch on TV, which means I need starting lineups. This script provides convenient access to all the information that needs to go onto a scorecard.
@@ -19,6 +20,7 @@ I enjoy scoring baseball games that I watch on TV, which means I need starting l
 - Required packages:
   - requests
   - pytz
+  - pytest (for test suite)
 
 ## Installation
 
@@ -36,7 +38,7 @@ I enjoy scoring baseball games that I watch on TV, which means I need starting l
 
 3. Install the required packages:
    ```
-   pip install requests pytz
+   pip install -r requirements.txt
    ```
 
 ## Usage
