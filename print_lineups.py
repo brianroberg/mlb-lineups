@@ -39,6 +39,17 @@ MLB_TEAMS = {
     "WSH": 120,  # Washington Nationals
 }
 
+def get_today_date_eastern():
+    """
+    Get today's date in Eastern time, formatted as YYYY-MM-DD
+    
+    Returns:
+        str: Today's date in YYYY-MM-DD format (Eastern Time)
+    """
+    eastern = pytz.timezone('US/Eastern')
+    return datetime.now(eastern).strftime('%Y-%m-%d')
+
+
 def get_team_game(team_id, date=None):
     """
     Fetch a team's game information from the MLB Stats API for a specific date using statsapi
@@ -46,11 +57,13 @@ def get_team_game(team_id, date=None):
     Args:
         team_id (int): The MLB team ID
         date (str, optional): Date in YYYY-MM-DD format. Defaults to today's date.
+        
+    Returns:
+        tuple: (game_id, game_status, venue_name, team_names) or (None, None, None, error_message)
     """
     # Get today's date in the format required by the API (YYYY-MM-DD) if not provided
     if date is None:
-        eastern = pytz.timezone('US/Eastern')
-        date = datetime.now(eastern).strftime('%Y-%m-%d')
+        date = get_today_date_eastern()
     
     try:
         # Use the MLB-StatsAPI library to get schedule data
@@ -66,9 +79,10 @@ def get_team_game(team_id, date=None):
         game_status = game['status']
         
         # Get team names for both teams
-        home_team = game['home_name']
-        away_team = game['away_name']
-        team_names = {'home': home_team, 'away': away_team}
+        team_names = {
+            'home': game['home_name'],
+            'away': game['away_name']
+        }
         
         # Get venue information if available
         venue_name = game.get('venue_name')
@@ -87,6 +101,12 @@ def get_pitcher_details(pitcher_id):
     Returns:
         dict: Pitcher details including name, jersey number, and handedness
     """
+    # Map of throwing hand codes to descriptive text
+    THROWS_MAP = {
+        'R': 'RHP',
+        'L': 'LHP'
+    }
+    
     url = f"https://statsapi.mlb.com/api/v1/people/{pitcher_id}"
     
     try:
@@ -98,19 +118,16 @@ def get_pitcher_details(pitcher_id):
             return None
             
         person = data['people'][0]
+        
+        # Get throwing hand code
+        throws_code = person.get('pitchHand', {}).get('code', '')
+        
         details = {
             'name': person.get('fullName', ''),
             'jersey': person.get('primaryNumber', ''),
-            'throws': person.get('pitchHand', {}).get('code', '')
+            'throws': throws_code,
+            'throws_desc': THROWS_MAP.get(throws_code, 'Unknown')
         }
-        
-        # Expand throws code to descriptive text
-        if details['throws'] == 'R':
-            details['throws_desc'] = 'RHP'
-        elif details['throws'] == 'L':
-            details['throws_desc'] = 'LHP'
-        else:
-            details['throws_desc'] = 'Unknown'
             
         return details
     except requests.exceptions.RequestException as e:
@@ -201,41 +218,28 @@ def get_pitchers_from_schedule(game_id, team_id):
             'opponent_team': game.get(f'{opponent_side}_name')
         }
         
-        # Check for direct pitcher names first
-        home_probable_pitcher = game.get('home_probable_pitcher')
-        away_probable_pitcher = game.get('away_probable_pitcher')
-        
-        # Create simple pitcher data from the names provided by the API
-        if team_side == 'home' and home_probable_pitcher:
-            # Create a simple pitcher object with just the name
-            pitchers['team'] = {
-                'name': home_probable_pitcher,
+        # Create a simple pitcher info dictionary function 
+        def create_pitcher_info(name):
+            return {
+                'name': name,
                 'jersey': '',  # We don't have this info from the direct API
                 'throws': '',
                 'throws_desc': ''
-            }
-        elif team_side == 'away' and away_probable_pitcher:
-            pitchers['team'] = {
-                'name': away_probable_pitcher,
-                'jersey': '',
-                'throws': '',
-                'throws_desc': ''
-            }
-            
-        if opponent_side == 'home' and home_probable_pitcher:
-            pitchers['opponent'] = {
-                'name': home_probable_pitcher,
-                'jersey': '',
-                'throws': '',
-                'throws_desc': ''
-            }
-        elif opponent_side == 'away' and away_probable_pitcher:
-            pitchers['opponent'] = {
-                'name': away_probable_pitcher,
-                'jersey': '',
-                'throws': '',
-                'throws_desc': ''
-            }
+            } if name else None
+        
+        # Get probable pitcher names
+        home_probable_pitcher = game.get('home_probable_pitcher')
+        away_probable_pitcher = game.get('away_probable_pitcher')
+        
+        # Assign pitcher data based on which side the team is on
+        pitcher_map = {
+            'home': home_probable_pitcher,
+            'away': away_probable_pitcher
+        }
+        
+        # Create pitcher objects for both sides
+        pitchers['team'] = create_pitcher_info(pitcher_map.get(team_side))
+        pitchers['opponent'] = create_pitcher_info(pitcher_map.get(opponent_side))
         
         return pitchers
     except Exception as e:
@@ -380,6 +384,38 @@ def get_lineup(game_id, team_id):
     except KeyError as e:
         return None, f"Lineup data not available yet: {e}"
 
+def format_pitcher_info(pitcher):
+    """
+    Format pitcher information for display
+    
+    Args:
+        pitcher (dict): Pitcher information dictionary
+        
+    Returns:
+        str: Formatted pitcher information string
+    """
+    if not pitcher:
+        return "Starting pitcher information not available"
+        
+    jersey_display = f"#{pitcher['jersey']} " if pitcher.get('jersey') else ''
+    throws = f" ({pitcher['throws_desc']})" if pitcher.get('throws_desc') else ''
+    return f"{jersey_display}{pitcher['name']}{throws}"
+
+
+def format_player_info(player):
+    """
+    Format player information for display
+    
+    Args:
+        player (dict): Player information dictionary
+        
+    Returns:
+        str: Formatted player information string
+    """
+    jersey_display = f"#{player['jersey']} " if player.get('jersey') else ''
+    return f"{player['batting_order']}. {jersey_display}{player['name']} ({player['position']})"
+
+
 def main():
     # Set up command line argument parsing
     parser = argparse.ArgumentParser(description='Fetch MLB lineup information')
@@ -441,17 +477,14 @@ def main():
         
         # Our team's pitcher
         if pitchers['team']:
-            jersey_display = f"#{pitchers['team']['jersey']} " if pitchers['team'].get('jersey') else ''
-            throws = f" ({pitchers['team']['throws_desc']})" if pitchers['team'].get('throws_desc') else ''
-            print(f"{pitchers['team_name']}: {jersey_display}{pitchers['team']['name']}{throws}")
+            # Display pitcher info using helper function
+            print(f"{pitchers['team_name']}: {format_pitcher_info(pitchers['team'])}")
         else:
             print(f"{pitchers['team_name']}: Starting pitcher information not available")
             
         # Opponent pitcher
         if pitchers['opponent']:
-            jersey_display = f"#{pitchers['opponent']['jersey']} " if pitchers['opponent'].get('jersey') else ''
-            throws = f" ({pitchers['opponent']['throws_desc']})" if pitchers['opponent'].get('throws_desc') else ''
-            print(f"{pitchers['opponent_team']}: {jersey_display}{pitchers['opponent']['name']}{throws}")
+            print(f"{pitchers['opponent_team']}: {format_pitcher_info(pitchers['opponent'])}")
         else:
             print(f"{pitchers['opponent_team']}: Starting pitcher information not available")
     
@@ -459,13 +492,11 @@ def main():
     if lineup_data:
         print(f"\n----- {team_abbr} LINEUP -----")
         for player in lineup_data['team']['lineup']:
-            jersey_display = f"#{player['jersey']} " if player['jersey'] else ''
-            print(f"{player['batting_order']}. {jersey_display}{player['name']} ({player['position']})")
+            print(format_player_info(player))
         
         print("\n----- OPPONENT LINEUP -----")
         for player in lineup_data['opponent']['lineup']:
-            jersey_display = f"#{player['jersey']} " if player['jersey'] else ''
-            print(f"{player['batting_order']}. {jersey_display}{player['name']} ({player['position']})")
+            print(format_player_info(player))
     else:
         # Only show error if it's not just that the lineup isn't available yet
         if error and "not yet available" not in error:
