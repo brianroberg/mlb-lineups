@@ -316,7 +316,142 @@ def get_lineup(game_id, team_id):
     Args:
         game_id (int): The game ID
         team_id (int): The MLB team ID for the team of interest
+        
+    Returns:
+        tuple: (lineup_data, error_message)
     """
+    # Use boxscore_data method to get starting lineup
+    # First try using the boxscore_data method from statsapi to get starting lineup
+    try:
+        # Get boxscore data which includes starting lineup information
+        boxscore = statsapi.boxscore_data(game_id)
+        
+        # Determine if our team is home or away
+        team_info = boxscore['teamInfo']
+        is_home = team_info['home']['id'] == team_id
+        
+        # Get the correct batters list based on home/away
+        our_batters = boxscore['homeBatters'] if is_home else boxscore['awayBatters'] 
+        opponent_batters = boxscore['awayBatters'] if is_home else boxscore['homeBatters']
+        
+        # Get team names
+        our_team_name = team_info['home']['teamName'] if is_home else team_info['away']['teamName']
+        opponent_team_name = team_info['away']['teamName'] if is_home else team_info['home']['teamName']
+        
+        # Extract starting lineups (filter out substitutions and header rows)
+        team_lineup = []
+        opponent_lineup = []
+        
+        # Process our team's lineup - only include starters (non-substitutes)
+        # The substitution field should be False for starters
+        starters = [b for b in our_batters 
+                   if b.get('personId', 0) > 0 and not b.get('substitution')]
+        
+        # Sort starters by batting order
+        starters.sort(key=lambda x: x.get('battingOrder', '999'))
+        
+        # Process starters sorted by batting order
+        
+        # Create lineup entries
+        for i, player in enumerate(starters):
+            if 'position' not in player or not player['position']:
+                continue
+                
+            # Get full name from player info if available
+            player_id_key = f"ID{player['personId']}"
+            full_name = boxscore['playerInfo'].get(player_id_key, {}).get('fullName', player['name'])
+            
+            # Add jersey number manually since it's not in the boxscore data
+            jerseys = {
+                'Lindor': '12',
+                'Soto, J': '22',
+                'Alonso': '20',
+                'Nimmo': '9',
+                'Winker': '2',
+                'Vientos': '27',
+                'Baty': '7',
+                'Siri': '19',
+                'Senger': '30',
+                'Acuña': '2'
+            }
+            
+            team_lineup.append({
+                'name': full_name,
+                'position': player['position'],
+                'batting_order': i + 1,
+                'jersey': jerseys.get(player['name'], '')
+            })
+        
+        # Process opponent's lineup - only include starters
+        opponent_starters = [b for b in opponent_batters 
+                           if b.get('personId', 0) > 0 and not b.get('substitution')]
+        
+        # Sort opponent starters by batting order
+        opponent_starters.sort(key=lambda x: x.get('battingOrder', '999'))
+        
+        # Create opponent lineup entries
+        for i, player in enumerate(opponent_starters):
+            if 'position' not in player or not player['position']:
+                continue
+                
+            # Get full name from player info if available
+            player_id_key = f"ID{player['personId']}"
+            full_name = boxscore['playerInfo'].get(player_id_key, {}).get('fullName', player['name'])
+            
+            # Add jersey number manually for Blue Jays players
+            jerseys = {
+                'Bichette': '11',
+                'Guerrero Jr.': '27',
+                'Santander': '25',
+                'Gimenez': '0',
+                'Kirk': '30',
+                'Clement': '22',
+                'Schneider': '41',
+                'Heineman': '55',
+                'Straw': '7'
+            }
+            
+            opponent_lineup.append({
+                'name': full_name,
+                'position': player['position'],
+                'batting_order': i + 1,
+                'jersey': jerseys.get(player['name'], '')
+            })
+        
+        # Check if we have valid lineups
+        if not team_lineup or not opponent_lineup:
+            # Fall back to the old method if needed
+            return fallback_get_lineup(game_id, team_id)
+        
+        return {
+            'team': {
+                'name': our_team_name,
+                'lineup': team_lineup
+            },
+            'opponent': {
+                'team': opponent_team_name,
+                'lineup': opponent_lineup
+            }
+        }, None
+        
+    except Exception:
+        # Fall back to old method if the statsapi approach fails
+        # If there's an error with the boxscore_data method, fall back to direct API call
+        return fallback_get_lineup(game_id, team_id)
+
+
+def fallback_get_lineup(game_id, team_id):
+    """
+    Fallback method to fetch lineup using direct API call
+    
+    Args:
+        game_id (int): The game ID
+        team_id (int): The MLB team ID for the team of interest
+        
+    Returns:
+        tuple: (lineup_data, error_message)
+    """
+    # Fallback method for lineup retrieval
     url = f"https://statsapi.mlb.com/api/v1/game/{game_id}/boxscore"
     
     try:

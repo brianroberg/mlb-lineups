@@ -34,6 +34,118 @@ def mock_player_response():
     with open(os.path.join(os.path.dirname(__file__), 'fixtures', 'player_response.json'), 'r') as f:
         return json.load(f)
 
+@pytest.fixture
+def mock_boxscore_data_with_substitutes():
+    """Fixture for mock boxscore data containing substitutes"""
+    return {
+        "teamInfo": {
+            "away": {
+                "id": 141,
+                "abbreviation": "TOR",
+                "teamName": "Blue Jays",
+                "shortName": "Toronto"
+            },
+            "home": {
+                "id": 121,
+                "abbreviation": "NYM",
+                "teamName": "Mets",
+                "shortName": "NY Mets"
+            }
+        },
+        "homeBatters": [
+            # Header row
+            {
+                "namefield": "Mets Batters",
+                "position": "",
+                "battingOrder": "",
+                "personId": 0,
+                "substitution": False
+            },
+            # Regular starter
+            {
+                "namefield": "1 Lindor SS",
+                "name": "Lindor",
+                "position": "SS",
+                "battingOrder": "100",
+                "personId": 596019,
+                "substitution": False
+            },
+            # Another starter
+            {
+                "namefield": "7 Baty 2B",
+                "name": "Baty",
+                "position": "2B",
+                "battingOrder": "700",
+                "personId": 683146,
+                "substitution": False
+            },
+            # Substitute that replaced Baty at 2B
+            {
+                "namefield": "2 Acuña 2B",
+                "name": "Acuña",
+                "position": "2B",
+                "battingOrder": "701",
+                "personId": 682551,
+                "substitution": True
+            }
+        ],
+        "awayBatters": [
+            # Header row
+            {
+                "namefield": "Blue Jays Batters",
+                "position": "",
+                "battingOrder": "",
+                "personId": 0,
+                "substitution": False
+            },
+            # Regular starter
+            {
+                "namefield": "1 Bichette SS",
+                "name": "Bichette",
+                "position": "SS",
+                "battingOrder": "100",
+                "personId": 666182,
+                "substitution": False
+            },
+            # Substitute player
+            {
+                "namefield": "a-Kirk PH",
+                "name": "Kirk",
+                "position": "PH",
+                "battingOrder": "501",
+                "personId": 672386,
+                "substitution": True
+            }
+        ],
+        "playerInfo": {
+            "ID596019": {
+                "id": 596019,
+                "fullName": "Francisco Lindor",
+                "boxscoreName": "Lindor"
+            },
+            "ID683146": {
+                "id": 683146,
+                "fullName": "Brett Baty",
+                "boxscoreName": "Baty"
+            },
+            "ID682551": {
+                "id": 682551,
+                "fullName": "Luisangel Acuña",
+                "boxscoreName": "Acuña"
+            },
+            "ID666182": {
+                "id": 666182,
+                "fullName": "Bo Bichette",
+                "boxscoreName": "Bichette"
+            },
+            "ID672386": {
+                "id": 672386,
+                "fullName": "Alejandro Kirk",
+                "boxscoreName": "Kirk"
+            }
+        }
+    }
+
 # Unit Tests
 class TestMLBTeams:
     """Tests for the MLB_TEAMS dictionary"""
@@ -407,3 +519,66 @@ class TestGetUmpires:
         
         # Assertions
         assert umpires is None
+
+
+class TestSubstitutionHandling:
+    """Tests for handling of substitutions in lineup data"""
+    
+    @patch('statsapi.boxscore_data')
+    def test_get_lineup_filters_substitutes(self, mock_boxscore_data, mock_boxscore_data_with_substitutes):
+        """Test that get_lineup filters out substitute players from the lineup"""
+        # Configure the mock to return our custom mock data
+        mock_boxscore_data.return_value = mock_boxscore_data_with_substitutes
+        
+        # Call the function for the Mets (team_id 121)
+        lineup_data, error = get_lineup(778518, 121)
+        
+        # Check that there was no error
+        assert error is None
+        
+        # Check that we have a valid lineup response
+        assert lineup_data is not None
+        assert 'team' in lineup_data
+        assert 'lineup' in lineup_data['team']
+        
+        # Check Mets lineup - should include Baty but not Acuña
+        team_lineup = lineup_data['team']['lineup']
+        player_names = [player['name'] for player in team_lineup]
+        
+        # We should have 2 players: Lindor and Baty
+        assert len(team_lineup) == 2
+        assert 'Francisco Lindor' in player_names
+        assert 'Brett Baty' in player_names
+        assert 'Luisangel Acuña' not in player_names
+        
+        # Check that Baty is at 2B position
+        baty_entry = next(player for player in team_lineup if 'Baty' in player['name'])
+        assert baty_entry['position'] == '2B'
+        
+        # Check opponent lineup - should include Bichette but not Kirk
+        opponent_lineup = lineup_data['opponent']['lineup']
+        opponent_names = [player['name'] for player in opponent_lineup]
+        
+        assert len(opponent_lineup) == 1
+        assert 'Bo Bichette' in opponent_names
+        assert 'Alejandro Kirk' not in opponent_names
+    
+    @patch('statsapi.boxscore_data')
+    def test_lineup_batting_order(self, mock_boxscore_data, mock_boxscore_data_with_substitutes):
+        """Test that lineup batting order is preserved correctly"""
+        # Configure the mock to return our custom mock data
+        mock_boxscore_data.return_value = mock_boxscore_data_with_substitutes
+        
+        # Call the function for the Mets
+        lineup_data, _ = get_lineup(778518, 121)
+        
+        # Get the lineup and sort by batting order
+        team_lineup = lineup_data['team']['lineup']
+        
+        # First player should be Lindor (batting order 1)
+        assert team_lineup[0]['name'] == 'Francisco Lindor'
+        assert team_lineup[0]['batting_order'] == 1
+        
+        # Second player should be Baty (batting order 2)
+        assert team_lineup[1]['name'] == 'Brett Baty'
+        assert team_lineup[1]['batting_order'] == 2
