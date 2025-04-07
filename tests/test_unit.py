@@ -3,7 +3,6 @@ import json
 from unittest.mock import patch, MagicMock
 import sys
 import os
-import requests
 
 # Add the parent directory to the path to allow importing the main script
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -57,13 +56,17 @@ class TestMLBTeams:
 class TestGetTeamGame:
     """Tests for the get_team_game function"""
     
-    @patch('requests.get')
-    def test_get_team_game_success(self, mock_get, mock_schedule_response):
+    @patch('statsapi.schedule')
+    def test_get_team_game_success(self, mock_schedule, mock_schedule_response):
         """Test successful game retrieval"""
-        # Configure the mock
-        mock_response = MagicMock()
-        mock_response.json.return_value = mock_schedule_response
-        mock_get.return_value = mock_response
+        # Configure the statsapi mock
+        mock_schedule.return_value = [{
+            'game_id': 778518,
+            'status': 'Final',
+            'venue_name': 'Daikin Park',
+            'home_name': 'New York Mets',
+            'away_name': 'Test Opponent'
+        }]
         
         # Call the function
         game_id, game_status, venue_name, team_names = get_team_game(121)  # 121 is NYM
@@ -74,13 +77,11 @@ class TestGetTeamGame:
         assert venue_name == "Daikin Park"
         assert "New York Mets" in [team_names["home"], team_names["away"]]
         
-    @patch('requests.get')
-    def test_get_team_game_no_games(self, mock_get):
+    @patch('statsapi.schedule')
+    def test_get_team_game_no_games(self, mock_schedule):
         """Test handling when no games are scheduled"""
         # Configure the mock for no games
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"totalGames": 0}
-        mock_get.return_value = mock_response
+        mock_schedule.return_value = []
         
         # Call the function
         result = get_team_game(121)
@@ -89,26 +90,23 @@ class TestGetTeamGame:
         assert result[0] is None  # game_id should be None
         assert "No game scheduled" in result[3]  # Error message
         
-    @patch('requests.get')
-    def test_get_team_game_uses_date_parameter(self, mock_get):
-        """Test that date parameter is used in API URL"""
+    @patch('statsapi.schedule')
+    def test_get_team_game_uses_date_parameter(self, mock_schedule):
+        """Test that date parameter is used in API"""
         # Configure the mock
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"totalGames": 0}
-        mock_get.return_value = mock_response
+        mock_schedule.return_value = []
         
         # Call with a specific date
         get_team_game(121, "2025-04-01")
         
-        # Verify the URL used contains the date
-        args, kwargs = mock_get.call_args
-        assert "date=2025-04-01" in args[0]
+        # Verify the date parameter was passed to statsapi.schedule
+        mock_schedule.assert_called_with(date="2025-04-01", team=121, sportId=1)
         
-    @patch('requests.get')
-    def test_get_team_game_exception_handling(self, mock_get):
+    @patch('statsapi.schedule')
+    def test_get_team_game_exception_handling(self, mock_schedule):
         """Test exception handling in get_team_game"""
-        # Configure the mock to raise a RequestException instead of a generic Exception
-        mock_get.side_effect = requests.exceptions.RequestException("API Error")
+        # Configure the mock to raise an exception
+        mock_schedule.side_effect = Exception("API Error")
         
         # Call the function
         game_id, game_status, venue_name, error_msg = get_team_game(121)
@@ -258,16 +256,49 @@ class TestGetPitcherDetails:
 class TestGetProbablePitchers:
     """Tests for the get_probable_pitchers function"""
     
-    @patch('print_lineups.get_pitcher_details')
-    @patch('requests.get')
-    def test_get_probable_pitchers(self, mock_get, mock_get_pitcher_details, mock_boxscore_response):
-        """Test probable pitchers retrieval"""
-        # Configure the mocks
-        mock_response = MagicMock()
-        mock_response.json.return_value = mock_boxscore_response
-        mock_get.return_value = mock_response
+    @patch('print_lineups.get_pitchers_from_boxscore')
+    def test_get_probable_pitchers_for_completed_game(self, mock_get_pitchers_from_boxscore):
+        """Test probable pitchers retrieval for completed games"""
+        # Mock return value for completed game
+        expected_pitchers = {
+            'team': {'name': 'Team Pitcher', 'jersey': '21', 'throws': 'R', 'throws_desc': 'RHP'},
+            'opponent': {'name': 'Opponent Pitcher', 'jersey': '42', 'throws': 'L', 'throws_desc': 'LHP'},
+            'team_name': 'Test Team',
+            'opponent_team': 'Test Opponent'
+        }
+        mock_get_pitchers_from_boxscore.return_value = expected_pitchers
         
-        # Mock pitcher details return
+        # Call the function with a completed game status
+        pitchers = get_probable_pitchers(778518, "Final", 121)
+        
+        # Verify boxscore method was called and results returned
+        mock_get_pitchers_from_boxscore.assert_called_once_with(778518, 121)
+        assert pitchers == expected_pitchers
+    
+    @patch('print_lineups.get_pitchers_from_schedule')
+    def test_get_probable_pitchers_for_upcoming_game(self, mock_get_pitchers_from_schedule):
+        """Test probable pitchers retrieval for upcoming games"""
+        # Mock return value for upcoming game
+        expected_pitchers = {
+            'team': {'name': 'Future Pitcher', 'jersey': '', 'throws': '', 'throws_desc': ''},
+            'opponent': {'name': 'Future Opponent Pitcher', 'jersey': '', 'throws': '', 'throws_desc': ''},
+            'team_name': 'Test Team',
+            'opponent_team': 'Test Opponent'
+        }
+        mock_get_pitchers_from_schedule.return_value = expected_pitchers
+        
+        # Call the function with an upcoming game status
+        pitchers = get_probable_pitchers(778518, "Scheduled", 121)
+        
+        # Verify schedule method was called and results returned
+        mock_get_pitchers_from_schedule.assert_called_once_with(778518, 121)
+        assert pitchers == expected_pitchers
+
+    @patch('print_lineups.get_pitchers_from_boxscore')
+    @patch('print_lineups.get_pitcher_details')
+    def test_get_pitchers_from_boxscore_method(self, mock_get_pitcher_details, mock_boxscore):
+        """Test the get_pitchers_from_boxscore method"""
+        # Configure the mock return values
         pitcher_details = {
             'name': 'Test Pitcher',
             'jersey': '21',
@@ -276,14 +307,59 @@ class TestGetProbablePitchers:
         }
         mock_get_pitcher_details.return_value = pitcher_details
         
-        # Call the function
+        expected_result = {
+            'team': pitcher_details,
+            'opponent': None,
+            'team_name': 'New York Mets',
+            'opponent_team': 'Test Opponent'
+        }
+        mock_boxscore.return_value = expected_result
+        
+        # Call the parent function with a completed game status
         pitchers = get_probable_pitchers(778518, "Final", 121)
         
-        # Assertions
-        assert pitchers is not None
-        assert 'team' in pitchers
-        assert 'opponent' in pitchers
-        assert pitchers['team'] == pitcher_details or pitchers['opponent'] == pitcher_details
+        # Verify get_pitchers_from_boxscore was called
+        mock_boxscore.assert_called_once_with(778518, 121)
+        assert pitchers == expected_result
+    
+    @patch('print_lineups.get_pitchers_from_schedule')
+    @patch('print_lineups.get_pitcher_details')
+    def test_get_pitchers_from_schedule_method(self, mock_get_pitcher_details, mock_schedule_method):
+        """Test the get_pitchers_from_schedule method"""
+        # Mock the return values
+        expected_result = {
+            'team': {
+                'name': 'David Peterson',
+                'jersey': '',
+                'throws': '',
+                'throws_desc': ''
+            },
+            'opponent': {
+                'name': 'Quinn Priester',
+                'jersey': '',
+                'throws': '',
+                'throws_desc': ''
+            },
+            'team_name': 'New York Mets',
+            'opponent_team': 'Pittsburgh Pirates'
+        }
+        mock_schedule_method.return_value = expected_result
+        
+        # Mock pitcher details (should not be called)
+        mock_get_pitcher_details.return_value = {
+            'name': 'Should Not Be Used',
+            'jersey': '99',
+            'throws': 'X',
+            'throws_desc': 'XXX'
+        }
+        
+        # Call parent function with an upcoming game status
+        pitchers = get_probable_pitchers(778518, "Scheduled", 121)
+        
+        # Verify get_pitchers_from_schedule was called
+        mock_schedule_method.assert_called_once_with(778518, 121)
+        assert pitchers == expected_result
+        mock_get_pitcher_details.assert_not_called()
 
 class TestGetUmpires:
     """Tests for the get_umpires function"""

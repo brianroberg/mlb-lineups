@@ -10,6 +10,7 @@ A command-line tool for displaying MLB game lineups, starting pitchers, and umpi
 - See game venue and umpire information
 - Specify a date to look up past or future games
 - No scores shown, so no risk of spoilers when watching time-shifted
+- **New:** Shows probable pitchers even when lineups aren't yet available
 
 ## Why I Wrote This
 I enjoy scoring baseball games that I watch on TV, which means I need starting lineups. This script provides convenient access to all the information that needs to go onto a scorecard.
@@ -20,6 +21,7 @@ I enjoy scoring baseball games that I watch on TV, which means I need starting l
 - Required packages:
   - requests
   - pytz
+  - MLB-StatsAPI
   - pytest (for test suite)
 
 ## Installation
@@ -79,16 +81,20 @@ python print_lineups.py --team LAD --date 2025-04-15
 
 The program displays:
 - Teams playing, with venue
-- Selected team's lineup with jersey numbers and positions
-- Opponent lineup with jersey numbers and positions
-- Starting pitchers for both teams, with jersey numbers and throwing arm
-- Umpire crew with positions
+- Starting pitchers for both teams, with jersey numbers and throwing arm (when available)
+- Selected team's lineup with jersey numbers and positions (when available)
+- Opponent lineup with jersey numbers and positions (when available)
+- Umpire crew with positions (when available)
 
-Example output:
+### Example output with complete information:
 ```
 ===== TODAY'S GAME =====
 Miami Marlins vs New York Mets
 Ballpark: loanDepot park
+
+----- STARTING PITCHERS -----
+Miami Marlins: #47 Cal Quantrill (RHP)
+New York Mets: #23 David Peterson (LHP)
 
 ----- MIA LINEUP -----
 1. #9 Xavier Edwards (SS)
@@ -112,10 +118,6 @@ Ballpark: loanDepot park
 8. #2 Luisangel Acuña (SS)
 9. #19 Jose Siri (CF)
 
------ STARTING PITCHERS -----
-Miami Marlins: #47 Cal Quantrill (Right)
-New York Mets: #23 David Peterson (Left)
-
 ----- UMPIRES -----
 Home Plate: Nate Tomlinson
 First Base: Mark Wegner
@@ -123,9 +125,36 @@ Second Base: Bruce Dreckman
 Third Base: Shane Livensparger
 ```
 
+### Example output for a future game:
+```
+===== GAME FOR 2025-04-15 =====
+Los Angeles Dodgers vs San Francisco Giants
+Ballpark: Dodger Stadium
+
+----- STARTING PITCHERS -----
+Los Angeles Dodgers: Yoshinobu Yamamoto (RHP)
+San Francisco Giants: Logan Webb (RHP)
+
+Lineups not yet available.
+```
+
 ## Note
 
-This tool uses the MLB Stats API to retrieve game data. Some information may not be available until closer to game time or after a game has started.
+This tool uses the MLB Stats API to retrieve game data. For upcoming games, probable pitchers are usually announced several days in advance, while lineups typically become available a few hours before game time.
+
+## Development
+
+### Testing
+The project includes unit and integration tests. Run them with:
+```
+python -m pytest
+```
+
+Or run specific test categories:
+```
+python -m pytest -m unit
+python -m pytest -m integration
+```
 
 ## License
 

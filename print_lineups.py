@@ -3,6 +3,7 @@ from datetime import datetime
 import pytz
 import argparse
 import sys
+import statsapi
 
 # MLB team abbreviations to team IDs mapping
 MLB_TEAMS = {
@@ -40,7 +41,7 @@ MLB_TEAMS = {
 
 def get_team_game(team_id, date=None):
     """
-    Fetch a team's game information from the MLB Stats API for a specific date
+    Fetch a team's game information from the MLB Stats API for a specific date using statsapi
     
     Args:
         team_id (int): The MLB team ID
@@ -51,35 +52,29 @@ def get_team_game(team_id, date=None):
         eastern = pytz.timezone('US/Eastern')
         date = datetime.now(eastern).strftime('%Y-%m-%d')
     
-    # MLB Stats API endpoint for the schedule with venue information
-    url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={date}&teamId={team_id}&hydrate=venue"
-    
     try:
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
+        # Use the MLB-StatsAPI library to get schedule data
+        schedule_data = statsapi.schedule(date=date, team=team_id, sportId=1)
         
         # Check if there are any games for the specified date
-        if data['totalGames'] == 0:
+        if not schedule_data or len(schedule_data) == 0:
             return None, None, None, "No game scheduled for the selected team on this date."
         
         # Get the game information from the first (and likely only) game
-        game = data['dates'][0]['games'][0]
-        game_id = game['gamePk']
-        game_status = game['status']['detailedState']
+        game = schedule_data[0]
+        game_id = game['game_id']
+        game_status = game['status']
         
         # Get team names for both teams
-        home_team = game['teams']['home']['team']['name']
-        away_team = game['teams']['away']['team']['name']
+        home_team = game['home_name']
+        away_team = game['away_name']
         team_names = {'home': home_team, 'away': away_team}
         
         # Get venue information if available
-        venue_name = None
-        if 'venue' in game and 'name' in game['venue']:
-            venue_name = game['venue']['name']
+        venue_name = game.get('venue_name')
         
         return game_id, game_status, venue_name, team_names
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         return None, None, None, f"Error fetching game data: {e}"
 
 def get_pitcher_details(pitcher_id):
@@ -169,7 +164,7 @@ def get_probable_pitchers(game_id, status, team_id):
 
 def get_pitchers_from_schedule(game_id, team_id):
     """
-    Fetch probable pitchers from the schedule endpoint for upcoming games
+    Fetch probable pitchers from the schedule endpoint for upcoming games using statsapi
     
     Args:
         game_id (int): The game ID
@@ -178,41 +173,72 @@ def get_pitchers_from_schedule(game_id, team_id):
     Returns:
         dict: Pitcher information for both teams
     """
-    # Use schedule endpoint with probablePitchers hydration
-    url = f"https://statsapi.mlb.com/api/v1/schedule?gamePk={game_id}&hydrate=probablePitchers"
-    
     try:
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
+        # Use the MLB-StatsAPI library to get schedule data with probable pitchers
+        schedule_data = statsapi.schedule(game_id=game_id, sportId=1)
         
         # Check if we have game data
-        if not data.get('dates') or not data['dates'][0].get('games'):
+        if not schedule_data or len(schedule_data) == 0:
             return None
             
-        game = data['dates'][0]['games'][0]
-        teams_data = game['teams']
+        game = schedule_data[0]
         
-        # Find which side our team is on (home or away)
-        team_side = 'home' if teams_data['home']['team']['id'] == team_id else 'away'
-        opponent_side = 'away' if team_side == 'home' else 'home'
+        # Find which team is ours and which is the opponent
+        home_team_id = game.get('home_id')
         
-        # Initialize pitcher data
+        if team_id == home_team_id:
+            team_side = 'home'
+            opponent_side = 'away'
+        else:
+            team_side = 'away'
+            opponent_side = 'home'
+        
+        # Initialize pitcher data with team names
         pitchers = {
             'team': None,
             'opponent': None,
-            'team_name': teams_data[team_side]['team']['name'],
-            'opponent_team': teams_data[opponent_side]['team']['name']
+            'team_name': game.get(f'{team_side}_name'),
+            'opponent_team': game.get(f'{opponent_side}_name')
         }
         
-        # Extract probable pitchers if available
-        for side_key, side in [('team', team_side), ('opponent', opponent_side)]:
-            if 'probablePitcher' in teams_data[side]:
-                pitcher_id = teams_data[side]['probablePitcher']['id']
-                pitchers[side_key] = get_pitcher_details(pitcher_id)
+        # Check for direct pitcher names first
+        home_probable_pitcher = game.get('home_probable_pitcher')
+        away_probable_pitcher = game.get('away_probable_pitcher')
+        
+        # Create simple pitcher data from the names provided by the API
+        if team_side == 'home' and home_probable_pitcher:
+            # Create a simple pitcher object with just the name
+            pitchers['team'] = {
+                'name': home_probable_pitcher,
+                'jersey': '',  # We don't have this info from the direct API
+                'throws': '',
+                'throws_desc': ''
+            }
+        elif team_side == 'away' and away_probable_pitcher:
+            pitchers['team'] = {
+                'name': away_probable_pitcher,
+                'jersey': '',
+                'throws': '',
+                'throws_desc': ''
+            }
+            
+        if opponent_side == 'home' and home_probable_pitcher:
+            pitchers['opponent'] = {
+                'name': home_probable_pitcher,
+                'jersey': '',
+                'throws': '',
+                'throws_desc': ''
+            }
+        elif opponent_side == 'away' and away_probable_pitcher:
+            pitchers['opponent'] = {
+                'name': away_probable_pitcher,
+                'jersey': '',
+                'throws': '',
+                'throws_desc': ''
+            }
         
         return pitchers
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         print(f"Error fetching probable pitchers from schedule: {e}")
         return None
 
