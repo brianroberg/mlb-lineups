@@ -247,11 +247,13 @@ class TestEndToEndWithMocks:
             output = fake_output.getvalue()
             assert message in output
             
+    @patch('print_lineups.get_umpires')
     @patch('print_lineups.get_probable_pitchers')
     @patch('print_lineups.get_lineup')
     @patch('print_lineups.get_team_game')
     @patch('sys.exit')  # Mock sys.exit to prevent actual exit
-    def test_lineup_not_available(self, mock_exit, mock_get_team_game, mock_get_lineup, mock_get_probable_pitchers):
+    def test_lineup_not_available(self, mock_exit, mock_get_team_game, mock_get_lineup, 
+                                 mock_get_probable_pitchers, mock_get_umpires):
         """Test behavior when lineup is not available"""
         # Configure mocks
         mock_get_team_game.return_value = (
@@ -264,25 +266,37 @@ class TestEndToEndWithMocks:
         error_message = "Lineup not yet available for this game against Test Opponent"
         mock_get_lineup.return_value = (None, error_message)
         
-        # Set up an exit handler to capture the exit
-        def side_effect(code):
-            # Check that we're exiting with status code 1
-            assert code == 1
-            # Raise an exception to stop execution
-            raise SystemExit(code)
+        # Add pitcher information 
+        mock_get_probable_pitchers.return_value = {
+            'team': {
+                'name': 'Test Pitcher', 
+                'jersey': '30', 
+                'throws': 'R', 
+                'throws_desc': 'Right'
+            },
+            'opponent': {
+                'name': 'Opponent Pitcher', 
+                'jersey': '40', 
+                'throws': 'L', 
+                'throws_desc': 'Left'
+            },
+            'team_name': 'New York Mets',
+            'opponent_team': 'Test Opponent'
+        }
         
-        # Configure the mock exit to use our side effect
-        mock_exit.side_effect = side_effect
+        mock_get_umpires.return_value = None
         
         # Set up sys.argv
         sys.argv = ['print_lineups.py']
         
         # Run main function with patched stdout
         with patch('sys.stdout', new=StringIO()) as fake_output:
-            # Call main with SystemExit expected
-            with pytest.raises(SystemExit):
-                print_lineups.main()
+            # Run main without expecting SystemExit (our updated code doesn't exit on missing lineup)
+            print_lineups.main()
             
             # Check output
             output = fake_output.getvalue()
-            assert error_message in output
+            assert "New York Mets vs Test Opponent" in output
+            assert "STARTING PITCHERS" in output
+            assert "Test Pitcher" in output
+            assert "Lineups not yet available" in output

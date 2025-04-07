@@ -159,7 +159,74 @@ def get_probable_pitchers(game_id, status, team_id):
     Returns:
         dict: Pitcher information for both teams
     """
-    # For completed games, we need to check the boxscore
+    # Use different endpoints based on game status
+    if status in ["Final", "In Progress"]:
+        # For completed or in-progress games, use boxscore to find who actually pitched
+        return get_pitchers_from_boxscore(game_id, team_id)
+    else:
+        # For upcoming games, use schedule endpoint which has probable pitchers
+        return get_pitchers_from_schedule(game_id, team_id)
+
+def get_pitchers_from_schedule(game_id, team_id):
+    """
+    Fetch probable pitchers from the schedule endpoint for upcoming games
+    
+    Args:
+        game_id (int): The game ID
+        team_id (int): The MLB team ID for the team of interest
+        
+    Returns:
+        dict: Pitcher information for both teams
+    """
+    # Use schedule endpoint with probablePitchers hydration
+    url = f"https://statsapi.mlb.com/api/v1/schedule?gamePk={game_id}&hydrate=probablePitchers"
+    
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Check if we have game data
+        if not data.get('dates') or not data['dates'][0].get('games'):
+            return None
+            
+        game = data['dates'][0]['games'][0]
+        teams_data = game['teams']
+        
+        # Find which side our team is on (home or away)
+        team_side = 'home' if teams_data['home']['team']['id'] == team_id else 'away'
+        opponent_side = 'away' if team_side == 'home' else 'home'
+        
+        # Initialize pitcher data
+        pitchers = {
+            'team': None,
+            'opponent': None,
+            'team_name': teams_data[team_side]['team']['name'],
+            'opponent_team': teams_data[opponent_side]['team']['name']
+        }
+        
+        # Extract probable pitchers if available
+        for side_key, side in [('team', team_side), ('opponent', opponent_side)]:
+            if 'probablePitcher' in teams_data[side]:
+                pitcher_id = teams_data[side]['probablePitcher']['id']
+                pitchers[side_key] = get_pitcher_details(pitcher_id)
+        
+        return pitchers
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching probable pitchers from schedule: {e}")
+        return None
+
+def get_pitchers_from_boxscore(game_id, team_id):
+    """
+    Fetch pitchers from the boxscore endpoint for completed games
+    
+    Args:
+        game_id (int): The game ID
+        team_id (int): The MLB team ID for the team of interest
+        
+    Returns:
+        dict: Pitcher information for both teams
+    """
     url = f"https://statsapi.mlb.com/api/v1/game/{game_id}/boxscore"
     
     try:
@@ -192,8 +259,8 @@ def get_probable_pitchers(game_id, status, team_id):
             
             for player_id, player in teams[side]['players'].items():
                 if player['position']['abbreviation'] == 'P':
-                    # If game is completed, look for the pitcher who pitched
-                    if status in ["Final", "In Progress"] and 'stats' in player and 'pitching' in player['stats']:
+                    # Look for the pitcher who pitched the most innings
+                    if 'stats' in player and 'pitching' in player['stats']:
                         try:
                             # Try to parse innings pitched (could be a string like "6.0" or an int)
                             innings = float(player['stats']['pitching'].get('inningsPitched', 0))
@@ -209,7 +276,7 @@ def get_probable_pitchers(game_id, status, team_id):
                 
         return pitchers
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching probable pitchers: {e}")
+        print(f"Error fetching pitchers from boxscore: {e}")
         return None
 
 def get_lineup(game_id, team_id):
@@ -319,14 +386,7 @@ def main():
     if game_status == "Final":
         print("Note: This is a completed game. If lineups aren't available, the API may not have stored them.")
     
-    print("Fetching lineup information...")
-    lineup_data, error = get_lineup(game_id, team_id)
-    
-    if error:
-        print(error)
-        sys.exit(1)
-    
-    # Get starting pitchers
+    # Get starting pitchers (do this first as it's more likely to be available)
     print("Fetching starting pitchers...")
     pitchers = get_probable_pitchers(game_id, game_status, team_id)
     
@@ -334,22 +394,20 @@ def main():
     print("Fetching umpire information...")
     umpires = get_umpires(game_id)
     
-    # Print the lineups
+    # Fetch lineup information last (as it may not be available yet)
+    print("Fetching lineup information...")
+    lineup_data, error = get_lineup(game_id, team_id)
+    
+    # Print the game information header
     date_header = "TODAY'S GAME" if args.date is None else f"GAME FOR {args.date}"
     print(f"\n===== {date_header} =====")
-    print(f"{lineup_data['team']['name']} vs {lineup_data['opponent']['team']}")
+    
+    # Determine team names from either lineup data or team_names
+    home_team = team_names['home']
+    away_team = team_names['away']
+    print(f"{home_team} vs {away_team}")
     if venue_name:
         print(f"Ballpark: {venue_name}")
-    
-    print(f"\n----- {team_abbr} LINEUP -----")
-    for player in lineup_data['team']['lineup']:
-        jersey_display = f"#{player['jersey']} " if player['jersey'] else ''
-        print(f"{player['batting_order']}. {jersey_display}{player['name']} ({player['position']})")
-    
-    print("\n----- OPPONENT LINEUP -----")
-    for player in lineup_data['opponent']['lineup']:
-        jersey_display = f"#{player['jersey']} " if player['jersey'] else ''
-        print(f"{player['batting_order']}. {jersey_display}{player['name']} ({player['position']})")
     
     # Print starting pitchers if available
     if pitchers:
@@ -370,6 +428,24 @@ def main():
             print(f"{pitchers['opponent_team']}: {jersey_display}{pitchers['opponent']['name']}{throws}")
         else:
             print(f"{pitchers['opponent_team']}: Starting pitcher information not available")
+    
+    # Print lineups if available
+    if lineup_data:
+        print(f"\n----- {team_abbr} LINEUP -----")
+        for player in lineup_data['team']['lineup']:
+            jersey_display = f"#{player['jersey']} " if player['jersey'] else ''
+            print(f"{player['batting_order']}. {jersey_display}{player['name']} ({player['position']})")
+        
+        print("\n----- OPPONENT LINEUP -----")
+        for player in lineup_data['opponent']['lineup']:
+            jersey_display = f"#{player['jersey']} " if player['jersey'] else ''
+            print(f"{player['batting_order']}. {jersey_display}{player['name']} ({player['position']})")
+    else:
+        # Only show error if it's not just that the lineup isn't available yet
+        if error and "not yet available" not in error:
+            print(f"\nError getting lineup: {error}")
+        else:
+            print("\nLineups not yet available.")
     
     # Print umpire information if available
     if umpires:
