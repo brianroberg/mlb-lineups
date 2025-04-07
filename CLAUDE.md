@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Run unit tests only: `pytest -m unit`
 - Run integration tests only: `pytest -m integration`
 - Run specific test: `pytest tests/test_unit.py::TestMLBTeams::test_mlb_teams_has_30_teams`
+- Lint code: `ruff check print_lineups.py`
 
 ## Code Style Guidelines
 - Follow PEP 8 conventions for Python code
@@ -19,3 +20,4 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Use descriptive variable names
 - Organize constants at the top of modules
 - Maintain test coverage for new features
+- IMPORTANT: Always run the Ruff linter before committing changes: `ruff check --fix print_lineups.py`
