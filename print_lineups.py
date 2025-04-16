@@ -59,7 +59,7 @@ def get_team_game(team_id, date=None):
         date (str, optional): Date in YYYY-MM-DD format. Defaults to today's date.
         
     Returns:
-        tuple: (game_id, game_status, venue_name, team_names) or (None, None, None, error_message)
+        tuple: (game_id, game_status, venue_name, team_names, game_time) or (None, None, None, None, error_message)
     """
     # Get today's date in the format required by the API (YYYY-MM-DD) if not provided
     if date is None:
@@ -71,7 +71,7 @@ def get_team_game(team_id, date=None):
         
         # Check if there are any games for the specified date
         if not schedule_data or len(schedule_data) == 0:
-            return None, None, None, "No game scheduled for the selected team on this date."
+            return None, None, None, None, "No game scheduled for the selected team on this date."
         
         # Get the game information from the first (and likely only) game
         game = schedule_data[0]
@@ -87,9 +87,12 @@ def get_team_game(team_id, date=None):
         # Get venue information if available
         venue_name = game.get('venue_name')
         
-        return game_id, game_status, venue_name, team_names
+        # Get game time information
+        game_time = game.get('game_datetime', '')
+        
+        return game_id, game_status, venue_name, team_names, game_time
     except Exception as e:
-        return None, None, None, f"Error fetching game data: {e}"
+        return None, None, None, None, f"Error fetching game data: {e}"
 
 def get_pitcher_details(pitcher_id):
     """
@@ -551,6 +554,33 @@ def format_player_info(player):
     return f"{player['batting_order']}. {jersey_display}{player['name']} ({player['position']})"
 
 
+def convert_utc_to_edt(utc_time_str):
+    """
+    Convert UTC time string to EDT time string
+    
+    Args:
+        utc_time_str (str): UTC time string in ISO 8601 format
+        
+    Returns:
+        str: Time in EDT in format "h:MM PM/AM EDT"
+    """
+    if not utc_time_str:
+        return ''
+    
+    try:
+        # Parse the UTC time string
+        utc_time = datetime.fromisoformat(utc_time_str.replace('Z', '+00:00'))
+        
+        # Convert to Eastern time
+        eastern = pytz.timezone('US/Eastern')
+        edt_time = utc_time.astimezone(eastern)
+        
+        # Format as "h:MM PM/AM EDT"
+        return edt_time.strftime('%-I:%M %p EDT').lstrip('0')
+    except Exception as e:
+        print(f"Error converting time: {e}")
+        return ''
+
 def main():
     # Set up command line argument parsing
     parser = argparse.ArgumentParser(description='Fetch MLB lineup information')
@@ -569,7 +599,7 @@ def main():
     
     date_str = "today's" if args.date is None else f"the {args.date}"
     print(f"Fetching {date_str} {team_abbr} game information...")
-    game_id, game_status, venue_name, team_names = get_team_game(team_id, args.date)
+    game_id, game_status, venue_name, team_names, game_time = get_team_game(team_id, args.date)
     
     if game_id is None:
         print(game_status)
@@ -605,6 +635,12 @@ def main():
     print(f"{home_team} vs {away_team}")
     if venue_name:
         print(f"Ballpark: {venue_name}")
+    
+    # Display game time in EDT if available
+    if game_time:
+        edt_time = convert_utc_to_edt(game_time)
+        if edt_time:
+            print(f"Game Time: {edt_time}")
     
     # Print starting pitchers if available
     if pitchers:

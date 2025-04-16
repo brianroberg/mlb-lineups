@@ -36,7 +36,7 @@ class TestCommandLineOptions:
     def test_default_team_option(self, mock_get_team_game):
         """Test default team (NYM) is used when no --team option is provided"""
         # Configure the mock to return None values to short-circuit the function
-        mock_get_team_game.return_value = (None, None, None, "No games")
+        mock_get_team_game.return_value = (None, None, None, None, "No games")
         
         # Set up sys.argv
         sys.argv = ['print_lineups.py']
@@ -55,7 +55,7 @@ class TestCommandLineOptions:
     def test_specified_team_option(self, mock_get_team_game):
         """Test specified team is used when --team option is provided"""
         # Configure the mock
-        mock_get_team_game.return_value = (None, None, None, "No games")
+        mock_get_team_game.return_value = (None, None, None, None, "No games")
         
         # Test with different teams
         test_cases = [
@@ -80,7 +80,7 @@ class TestCommandLineOptions:
     def test_date_option(self, mock_get_team_game):
         """Test specified date is used when --date option is provided"""
         # Configure the mock
-        mock_get_team_game.return_value = (None, None, None, "No games")
+        mock_get_team_game.return_value = (None, None, None, None, "No games")
         
         # Set up sys.argv with a date
         sys.argv = ['print_lineups.py', '--date', '2025-04-15']
@@ -139,7 +139,8 @@ class TestEndToEndWithMocks:
             778518,  # game_id
             "Final",  # game_status
             "Test Ballpark",  # venue_name
-            {'home': 'New York Mets', 'away': 'Test Opponent'}  # team_names
+            {'home': 'New York Mets', 'away': 'Test Opponent'},  # team_names
+            "2025-04-15T18:10:00Z"  # game_time
         )
         
         mock_get_lineup.return_value = (
@@ -225,7 +226,7 @@ class TestEndToEndWithMocks:
         """Test behavior when no games are scheduled"""
         # Configure mock to return None values that trigger exit
         message = "None"
-        mock_get_team_game.return_value = (None, None, None, message)
+        mock_get_team_game.return_value = (None, None, None, None, message)
         
         # Set up an exit handler to capture the exit
         def side_effect(code):
@@ -260,7 +261,8 @@ class TestEndToEndWithMocks:
             778518,  # game_id
             "Scheduled",  # game_status
             "Test Ballpark",  # venue_name
-            {'home': 'New York Mets', 'away': 'Test Opponent'}  # team_names
+            {'home': 'New York Mets', 'away': 'Test Opponent'},  # team_names
+            "2025-04-15T18:10:00Z"  # game_time
         )
         
         error_message = "Lineup not yet available for this game against Test Opponent"

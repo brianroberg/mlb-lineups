@@ -177,17 +177,19 @@ class TestGetTeamGame:
             'status': 'Final',
             'venue_name': 'Daikin Park',
             'home_name': 'New York Mets',
-            'away_name': 'Test Opponent'
+            'away_name': 'Test Opponent',
+            'game_datetime': '2025-04-15T18:10:00Z'
         }]
         
         # Call the function
-        game_id, game_status, venue_name, team_names = get_team_game(121)  # 121 is NYM
+        game_id, game_status, venue_name, team_names, game_time = get_team_game(121)  # 121 is NYM
         
         # Assertions
         assert game_id == 778518
         assert game_status == "Final"
         assert venue_name == "Daikin Park"
         assert "New York Mets" in [team_names["home"], team_names["away"]]
+        assert game_time == "2025-04-15T18:10:00Z"
         
     @patch('statsapi.schedule')
     def test_get_team_game_no_games(self, mock_schedule):
@@ -200,7 +202,10 @@ class TestGetTeamGame:
         
         # Assertions
         assert result[0] is None  # game_id should be None
-        assert "No game scheduled" in result[3]  # Error message
+        assert result[1] is None  # game_status should be None
+        assert result[2] is None  # venue_name should be None
+        assert result[3] is None  # team_names should be None
+        assert "No game scheduled" in result[4]  # Error message
         
     @patch('statsapi.schedule')
     def test_get_team_game_uses_date_parameter(self, mock_schedule):
@@ -221,7 +226,7 @@ class TestGetTeamGame:
         mock_schedule.side_effect = Exception("API Error")
         
         # Call the function
-        game_id, game_status, venue_name, error_msg = get_team_game(121)
+        game_id, game_status, venue_name, team_names, error_msg = get_team_game(121)
         
         # Assertions
         assert game_id is None
