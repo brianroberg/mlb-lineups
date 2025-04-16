@@ -94,6 +94,38 @@ def get_team_game(team_id, date=None):
     except Exception as e:
         return None, None, None, None, f"Error fetching game data: {e}"
 
+def get_player_details(player_id):
+    """
+    Fetch detailed information about a player from the MLB Stats API
+    
+    Args:
+        player_id (int): The MLB ID of the player
+        
+    Returns:
+        dict: Player details including name and jersey number
+    """
+    url = f"https://statsapi.mlb.com/api/v1/people/{player_id}"
+    
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        
+        if not data.get('people'):
+            return None
+            
+        person = data['people'][0]
+        
+        details = {
+            'name': person.get('fullName', ''),
+            'jersey': person.get('primaryNumber', '')
+        }
+            
+        return details
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching player details: {e}")
+        return None
+
 def get_pitcher_details(pitcher_id):
     """
     Fetch detailed information about a pitcher from the MLB Stats API
@@ -364,25 +396,15 @@ def get_lineup(game_id, team_id):
             player_id_key = f"ID{player['personId']}"
             full_name = boxscore['playerInfo'].get(player_id_key, {}).get('fullName', player['name'])
             
-            # Add jersey number manually since it's not in the boxscore data
-            jerseys = {
-                'Lindor': '12',
-                'Soto, J': '22',
-                'Alonso': '20',
-                'Nimmo': '9',
-                'Winker': '2',
-                'Vientos': '27',
-                'Baty': '7',
-                'Siri': '19',
-                'Senger': '30',
-                'Acuña': '2'
-            }
+            # Fetch jersey number using player ID
+            player_details = get_player_details(player['personId'])
+            jersey_number = player_details.get('jersey', '') if player_details else ''
             
             team_lineup.append({
                 'name': full_name,
                 'position': player['position'],
                 'batting_order': i + 1,
-                'jersey': jerseys.get(player['name'], '')
+                'jersey': jersey_number
             })
         
         # Process opponent's lineup - only include starters
@@ -401,24 +423,15 @@ def get_lineup(game_id, team_id):
             player_id_key = f"ID{player['personId']}"
             full_name = boxscore['playerInfo'].get(player_id_key, {}).get('fullName', player['name'])
             
-            # Add jersey number manually for Blue Jays players
-            jerseys = {
-                'Bichette': '11',
-                'Guerrero Jr.': '27',
-                'Santander': '25',
-                'Gimenez': '0',
-                'Kirk': '30',
-                'Clement': '22',
-                'Schneider': '41',
-                'Heineman': '55',
-                'Straw': '7'
-            }
+            # Fetch jersey number using player ID
+            player_details = get_player_details(player['personId'])
+            jersey_number = player_details.get('jersey', '') if player_details else ''
             
             opponent_lineup.append({
                 'name': full_name,
                 'position': player['position'],
                 'batting_order': i + 1,
-                'jersey': jerseys.get(player['name'], '')
+                'jersey': jersey_number
             })
         
         # Check if we have valid lineups
