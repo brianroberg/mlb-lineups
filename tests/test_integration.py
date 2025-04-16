@@ -197,16 +197,15 @@ class TestEndToEndWithMocks:
             
             # Game header
             assert "Test Ballpark" in output
-            assert "New York Mets vs Test Opponent" in output
+            assert "Test Opponent vs. New York Mets" in output
             
-            # NYM lineup
-            assert "NYM LINEUP" in output
+            # Check both lineups are present
+            assert "LINEUP (HOME)" in output
+            assert "LINEUP (AWAY)" in output
             assert "Test Player 1" in output
             assert "#10" in output
-            
-            # Opponent lineup
-            assert "OPPONENT LINEUP" in output
             assert "Opponent 1" in output
+            assert "#5" in output
             
             # Pitchers
             assert "STARTING PITCHERS" in output
@@ -298,7 +297,7 @@ class TestEndToEndWithMocks:
             
             # Check output
             output = fake_output.getvalue()
-            assert "New York Mets vs Test Opponent" in output
+            assert "Test Opponent vs. New York Mets" in output
             assert "STARTING PITCHERS" in output
             assert "Test Pitcher" in output
             assert "Lineups not yet available" in output

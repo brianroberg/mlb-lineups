@@ -630,9 +630,10 @@ def main():
     print(f"\n===== {date_header} =====")
     
     # Determine team names from either lineup data or team_names
+    # Convention: visiting team (away) listed first, then home team
     home_team = team_names['home']
     away_team = team_names['away']
-    print(f"{home_team} vs {away_team}")
+    print(f"{away_team} vs. {home_team}")
     if venue_name:
         print(f"Ballpark: {venue_name}")
     
@@ -646,28 +647,60 @@ def main():
     if pitchers:
         print("\n----- STARTING PITCHERS -----")
         
-        # Our team's pitcher
-        if pitchers['team']:
-            # Display pitcher info using helper function
-            print(f"{pitchers['team_name']}: {format_pitcher_info(pitchers['team'])}")
+        # Determine whether our team is home or away for correct ordering
+        our_team_is_home = pitchers['team_name'] == home_team
+        
+        # Following baseball convention, list away pitcher first, then home pitcher
+        if our_team_is_home:
+            # Our team is home, so opponent is away - list opponent first
+            if pitchers['opponent']:
+                print(f"{pitchers['opponent_team']} (AWAY): {format_pitcher_info(pitchers['opponent'])}")
+            else:
+                print(f"{pitchers['opponent_team']} (AWAY): Starting pitcher information not available")
+                
+            # Then list our team (home)
+            if pitchers['team']:
+                print(f"{pitchers['team_name']} (HOME): {format_pitcher_info(pitchers['team'])}")
+            else:
+                print(f"{pitchers['team_name']} (HOME): Starting pitcher information not available")
         else:
-            print(f"{pitchers['team_name']}: Starting pitcher information not available")
-            
-        # Opponent pitcher
-        if pitchers['opponent']:
-            print(f"{pitchers['opponent_team']}: {format_pitcher_info(pitchers['opponent'])}")
-        else:
-            print(f"{pitchers['opponent_team']}: Starting pitcher information not available")
+            # Our team is away, so list our pitcher first
+            if pitchers['team']:
+                print(f"{pitchers['team_name']} (AWAY): {format_pitcher_info(pitchers['team'])}")
+            else:
+                print(f"{pitchers['team_name']} (AWAY): Starting pitcher information not available")
+                
+            # Then list opponent (home)
+            if pitchers['opponent']:
+                print(f"{pitchers['opponent_team']} (HOME): {format_pitcher_info(pitchers['opponent'])}")
+            else:
+                print(f"{pitchers['opponent_team']} (HOME): Starting pitcher information not available")
     
     # Print lineups if available
     if lineup_data:
-        print(f"\n----- {team_abbr} LINEUP -----")
-        for player in lineup_data['team']['lineup']:
-            print(format_player_info(player))
+        # Determine if our team is home or away
+        our_team_name = lineup_data['team']['name']
+        our_team_is_home = our_team_name == home_team
         
-        print("\n----- OPPONENT LINEUP -----")
-        for player in lineup_data['opponent']['lineup']:
-            print(format_player_info(player))
+        # Following baseball convention, show visiting team (away) lineup first
+        if our_team_is_home:
+            # Our team is home, so show opponent (away) lineup first
+            print(f"\n----- {lineup_data['opponent']['team']} LINEUP (AWAY) -----")
+            for player in lineup_data['opponent']['lineup']:
+                print(format_player_info(player))
+            
+            print(f"\n----- {team_abbr} LINEUP (HOME) -----")
+            for player in lineup_data['team']['lineup']:
+                print(format_player_info(player))
+        else:
+            # Our team is away, so show our lineup first
+            print(f"\n----- {team_abbr} LINEUP (AWAY) -----")
+            for player in lineup_data['team']['lineup']:
+                print(format_player_info(player))
+            
+            print(f"\n----- {lineup_data['opponent']['team']} LINEUP (HOME) -----")
+            for player in lineup_data['opponent']['lineup']:
+                print(format_player_info(player))
     else:
         # Only show error if it's not just that the lineup isn't available yet
         if error and "not yet available" not in error:
