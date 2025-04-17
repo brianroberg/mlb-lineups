@@ -89,40 +89,41 @@ The program displays:
 ### Example output with complete information:
 ```
 ===== TODAY'S GAME =====
-Miami Marlins vs New York Mets
-Ballpark: loanDepot park
+New York Mets vs. Minnesota Twins
+Ballpark: Target Field
+Game Time: 7:40 PM EDT
 
 ----- STARTING PITCHERS -----
-Miami Marlins: #47 Cal Quantrill (RHP)
-New York Mets: #23 David Peterson (LHP)
+New York Mets (AWAY): #35 Clay Holmes (RHP)
+Minnesota Twins (HOME): #41 Joe Ryan (RHP)
 
------ MIA LINEUP -----
-1. #9 Xavier Edwards (SS)
-2. #6 Otto Lopez (2B)
-3. #33 Eric Wagaman (DH)
-4. #3 Derek Hill (CF)
-5. #41 Jonah Bride (1B)
-6. #54 Dane Myers (RF)
-7. #34 Liam Hicks (C)
-8. #46 Javier Sanoja (LF)
-9. #21 Graham Pauley (3B)
-
------ OPPONENT LINEUP -----
-1. #6 Starling Marte (DH)
+----- NYM LINEUP (AWAY) -----
+1. #12 Francisco Lindor (SS)
 2. #22 Juan Soto (RF)
 3. #20 Pete Alonso (1B)
 4. #9 Brandon Nimmo (LF)
 5. #27 Mark Vientos (3B)
-6. #13 Luis Torrens (C)
-7. #7 Brett Baty (2B)
-8. #2 Luisangel Acuña (SS)
-9. #19 Jose Siri (CF)
+6. #3 Jesse Winker (DH)
+7. #13 Luis Torrens (C)
+8. #15 Tyrone Taylor (CF)
+9. #2 Luisangel Acuña (2B)
+
+----- Twins LINEUP (HOME) -----
+1. #47 Edouard Julien (DH)
+2. #25 Byron Buxton (CF)
+3. #50 Willi Castro (2B)
+4. #38 Matt Wallner (RF)
+5. #4 Carlos Correa (SS)
+6. #9 Trevor Larnach (LF)
+7. #13 Ty France (1B)
+8. #2 Brooks Lee (3B)
+9. #8 Christian Vázquez (C)
 
 ----- UMPIRES -----
-Home Plate: Nate Tomlinson
-First Base: Mark Wegner
-Second Base: Bruce Dreckman
-Third Base: Shane Livensparger
+Home Plate: Adam Hamari
+First Base: Nestor Ceja
+Second Base: Todd Tichenor
+Third Base: Hunter Wendelstedt
 ```
 
 ### Example output for a future game:
