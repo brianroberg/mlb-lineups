@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}{{ data.requested_team.abbreviation }} Lineup{% endblock %}
+
+{% block content %}
+<div class="game-header">
+    <h2>{{ data.game.away_team }} vs. {{ data.game.home_team }}</h2>
+    <p><strong>Status:</strong> {{ data.game.status }}</p>
+    {% if data.game.venue %}
+    <p><strong>Ballpark:</strong> {{ data.game.venue }}</p>
+    {% endif %}
+    {% if data.game.game_time_formatted %}
+    <p><strong>Game Time:</strong> {{ data.game.game_time_formatted }}</p>
+    {% endif %}
+</div>
+
+{% if data.pitchers %}
+<section class="pitchers">
+    <h3>Starting Pitchers</h3>
+    <div class="pitcher-info">
+        {% if data.pitchers.team_name == data.game.away_team %}
+        {# Our team is away - show away first #}
+        <div class="pitcher-card">
+            <div class="label">{{ data.pitchers.team_name }} <span class="badge badge-away">AWAY</span></div>
+            <div>{{ format_pitcher_info(data.pitchers.team) }}</div>
+        </div>
+        <div class="pitcher-card">
+            <div class="label">{{ data.pitchers.opponent_team }} <span class="badge badge-home">HOME</span></div>
+            <div>{{ format_pitcher_info(data.pitchers.opponent) }}</div>
+        </div>
+        {% else %}
+        {# Our team is home - show opponent (away) first #}
+        <div class="pitcher-card">
+            <div class="label">{{ data.pitchers.opponent_team }} <span class="badge badge-away">AWAY</span></div>
+            <div>{{ format_pitcher_info(data.pitchers.opponent) }}</div>
+        </div>
+        <div class="pitcher-card">
+            <div class="label">{{ data.pitchers.team_name }} <span class="badge badge-home">HOME</span></div>
+            <div>{{ format_pitcher_info(data.pitchers.team) }}</div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+{% if data.lineup %}
+<section class="lineups">
+    <h3>Starting Lineups</h3>
+    <div class="lineup-container">
+        {% if data.requested_team.is_home %}
+        {# Our team is home - show opponent (away) first #}
+        <div class="lineup-card">
+            <h4>{{ data.lineup.opponent.team }} <span class="badge badge-away">AWAY</span></h4>
+            <ul>
+            {% for player in data.lineup.opponent.lineup %}
+                <li>{{ format_player_info(player) }}</li>
+            {% endfor %}
+            </ul>
+        </div>
+        <div class="lineup-card">
+            <h4>{{ data.lineup.team.name }} <span class="badge badge-home">HOME</span></h4>
+            <ul>
+            {% for player in data.lineup.team.lineup %}
+                <li>{{ format_player_info(player) }}</li>
+            {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        {# Our team is away - show us first #}
+        <div class="lineup-card">
+            <h4>{{ data.lineup.team.name }} <span class="badge badge-away">AWAY</span></h4>
+            <ul>
+            {% for player in data.lineup.team.lineup %}
+                <li>{{ format_player_info(player) }}</li>
+            {% endfor %}
+            </ul>
+        </div>
+        <div class="lineup-card">
+            <h4>{{ data.lineup.opponent.team }} <span class="badge badge-home">HOME</span></h4>
+            <ul>
+            {% for player in data.lineup.opponent.lineup %}
+                <li>{{ format_player_info(player) }}</li>
+            {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% elif data.lineup_error %}
+<section>
+    <h3>Lineup</h3>
+    <p class="error">{{ data.lineup_error }}</p>
+</section>
+{% else %}
+<section>
+    <h3>Lineup</h3>
+    <p>Lineup information not yet available.</p>
+</section>
+{% endif %}
+
+{% if data.umpires %}
+<section class="umpires">
+    <h3>Umpires</h3>
+    <ul>
+    {% for umpire in data.umpires %}
+        <li><strong>{{ umpire.officialType }}:</strong> {{ umpire.official.fullName }}</li>
+    {% endfor %}
+    </ul>
+</section>
+{% endif %}
+
+<p style="margin-top: 30px;">
+    <a href="/">← Back to Home</a> |
+    <a href="/api/lineup?team={{ data.requested_team.abbreviation }}{% if request.args.get('date') %}&date={{ request.args.get('date') }}{% endif %}">View as JSON</a>
+</p>
+{% endblock %}

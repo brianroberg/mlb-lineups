@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MLB Lineups{% endblock %}</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        header {
+            background: #1a365d;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        header h1 {
+            margin: 0;
+        }
+        header nav {
+            margin-top: 10px;
+        }
+        header nav a {
+            color: #90cdf4;
+            text-decoration: none;
+        }
+        header nav a:hover {
+            text-decoration: underline;
+        }
+        main {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2, h3 {
+            color: #1a365d;
+        }
+        .game-header {
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .game-header h2 {
+            margin-bottom: 10px;
+        }
+        .game-header p {
+            margin: 5px 0;
+            color: #4a5568;
+        }
+        section {
+            margin-bottom: 25px;
+        }
+        section h3 {
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .lineup-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 600px) {
+            .lineup-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        .lineup-card {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        .lineup-card h4 {
+            margin: 0 0 10px 0;
+            color: #2d3748;
+        }
+        .lineup-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .lineup-card li {
+            padding: 6px 0;
+            border-bottom: 1px solid #edf2f7;
+        }
+        .lineup-card li:last-child {
+            border-bottom: none;
+        }
+        .pitcher-info {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .pitcher-card {
+            flex: 1;
+            min-width: 200px;
+            background: #f7fafc;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        .pitcher-card .label {
+            font-size: 0.85em;
+            color: #718096;
+            margin-bottom: 4px;
+        }
+        .umpires ul {
+            list-style: none;
+            padding: 0;
+        }
+        .umpires li {
+            padding: 4px 0;
+        }
+        .error {
+            color: #c53030;
+            background: #fed7d7;
+            padding: 12px;
+            border-radius: 6px;
+        }
+        form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-size: 0.9em;
+            color: #4a5568;
+            margin-bottom: 4px;
+        }
+        select, input[type="date"] {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        button {
+            background: #3182ce;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        button:hover {
+            background: #2c5282;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        .badge-home {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        .badge-away {
+            background: #bee3f8;
+            color: #2a4365;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>MLB Lineups</h1>
+        <nav>
+            <a href="/">Home</a>
+        </nav>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

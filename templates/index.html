@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}MLB Lineups - Home{% endblock %}
+
+{% block content %}
+<h2>Get Game Lineup</h2>
+<p>Select a team and optionally a date to view the lineup information.</p>
+
+<form action="/api/lineup" method="get">
+    <input type="hidden" name="format" value="html">
+
+    <div class="form-group">
+        <label for="team">Team</label>
+        <select name="team" id="team" required>
+            {% for team in teams %}
+            <option value="{{ team }}"{% if team == 'NYM' %} selected{% endif %}>{{ team }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="date">Date (optional)</label>
+        <input type="date" name="date" id="date">
+    </div>
+
+    <button type="submit">Get Lineup</button>
+</form>
+
+<section style="margin-top: 30px;">
+    <h3>API Documentation</h3>
+    <p>You can also access lineup data via the JSON API:</p>
+    <pre style="background: #f7fafc; padding: 15px; border-radius: 6px; overflow-x: auto;">
+GET /api/lineup?team=NYM&date=2025-04-15
+
+Query Parameters:
+  team   - Required. Team abbreviation (e.g., NYM, LAD, NYY)
+  date   - Optional. Date in YYYY-MM-DD format (defaults to today)
+  format - Optional. Response format: 'json' (default) or 'html'
+
+Example Response:
+{
+  "game": {
+    "id": 778518,
+    "status": "Final",
+    "venue": "Citi Field",
+    "game_time": "2025-04-15T18:10:00Z",
+    "game_time_formatted": "2:10 PM EDT",
+    "home_team": "New York Mets",
+    "away_team": "Pittsburgh Pirates"
+  },
+  "pitchers": { ... },
+  "lineup": { ... },
+  "umpires": [ ... ]
+}</pre>
+</section>
+{% endblock %}
