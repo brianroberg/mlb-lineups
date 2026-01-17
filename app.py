@@ -14,6 +14,7 @@ from mlb.api_client import (
     get_umpires,
 )
 from mlb.formatters import convert_utc_to_edt, format_pitcher_info, format_player_info
+from mlb.cache import cache_manager, rate_limiter
 
 app = Flask(__name__)
 CORS(app)
@@ -146,6 +147,20 @@ def error_response(message, status_code, output_format='json'):
         ), status_code
 
     return jsonify({'error': message}), status_code
+
+
+@app.route('/api/cache-stats')
+def cache_stats():
+    """
+    Get cache and rate limiter statistics.
+
+    Returns:
+        JSON with cache hits/misses and rate limiter status
+    """
+    return jsonify({
+        'cache': cache_manager.get_stats(),
+        'rate_limiter': rate_limiter.get_stats()
+    })
 
 
 if __name__ == '__main__':

@@ -14,6 +14,15 @@ from mlb.api_client import (
     get_probable_pitchers,
     get_umpires
 )
+from mlb.cache import clear_cache
+
+
+@pytest.fixture(autouse=True)
+def reset_cache_before_each_test():
+    """Clear the cache before and after each test to prevent interference."""
+    clear_cache()
+    yield
+    clear_cache()
 
 
 # Sample data for mocking responses

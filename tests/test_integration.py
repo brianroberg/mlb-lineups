@@ -1,12 +1,21 @@
 import pytest
 import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import json
 
 # Add the parent directory to the path to allow importing the main modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import app
+from mlb.cache import clear_cache
+
+
+@pytest.fixture(autouse=True)
+def reset_cache_before_each_test():
+    """Clear the cache before and after each test to prevent interference."""
+    clear_cache()
+    yield
+    clear_cache()
 
 
 # Fixtures for test data
