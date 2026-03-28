@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    container_name: mlb-lineups
+    environment:
+      - WORKERS=2
+    restart: unless-stopped
+    networks:
+      - caddy_net
+
+networks:
+  caddy_net:
+    external: true

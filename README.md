@@ -47,10 +47,16 @@ uv run python app.py
 ```
 The server starts at `http://localhost:5000`
 
-**Production:**
+**Production (Docker):**
+```bash
+docker compose up -d
+```
+The server starts at `http://localhost:5001`
+
+**Production (local):**
 ```bash
 uv sync --frozen --group prod
-uv run gunicorn -w 4 -b 0.0.0.0:5000 app:app
+uv run gunicorn -w 2 -b 0.0.0.0:5000 app:app
 ```
 
 ### Web Interface
@@ -259,7 +265,9 @@ mlb-lineups/
 │   └── teams.py        # Team constants and validation
 ├── templates/          # Jinja2 HTML templates
 ├── tests/              # Test suite
-└── pyproject.toml      # Project metadata and dependencies
+├── pyproject.toml      # Project metadata and dependencies
+├── Dockerfile          # Container image definition
+└── compose.yaml        # Docker Compose configuration
 ```
 
 ## Note
