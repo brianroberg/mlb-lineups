@@ -110,7 +110,7 @@
 {% endif %}
 
 <p style="margin-top: 30px;">
-    <a href="/">← Back to Home</a> |
+    <a href="/search">Look up another team or date</a> |
     <a href="/api/lineup?team={{ data.requested_team.abbreviation }}{% if request.args.get('date') %}&date={{ request.args.get('date') }}{% endif %}">View as JSON</a>
 </p>
 {% endblock %}

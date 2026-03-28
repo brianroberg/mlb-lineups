@@ -55,10 +55,15 @@ class TestAPIEndpoints:
     """Integration tests for API endpoints"""
 
     def test_index_page(self, client):
-        """Test the index page returns HTML"""
+        """Test the index page returns today's lineup or no-game message"""
         response = client.get('/')
         assert response.status_code == 200
         assert b'MLB Lineups' in response.data
+
+    def test_search_page(self, client):
+        """Test the search page returns team selector form"""
+        response = client.get('/search')
+        assert response.status_code == 200
         assert b'Get Game Lineup' in response.data
 
     def test_missing_team_parameter(self, client):

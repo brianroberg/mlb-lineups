@@ -25,7 +25,61 @@ logger = logging.getLogger(__name__)
 
 @app.route('/')
 def index():
-    """Landing page with team selector form."""
+    """Homepage showing today's Mets lineup."""
+    team_abbr = 'NYM'
+    team_id = MLB_TEAMS[team_abbr]
+
+    try:
+        game_id, game_status, venue_name, team_names, game_time_or_error = get_team_game(team_id)
+
+        if game_id is None:
+            return render_template('no_game.html', team=team_abbr)
+
+        lineup_data, lineup_error = get_lineup(game_id, team_id)
+        pitchers = get_probable_pitchers(game_id, game_status, team_id)
+        umpires = get_umpires(game_id)
+
+        is_home = team_names.get('home') == (
+            pitchers.get('team_name') if pitchers else
+            lineup_data.get('team', {}).get('name') if lineup_data else None
+        ) if team_names else False
+
+        game_time = game_time_or_error
+        response_data = {
+            'game': {
+                'id': game_id,
+                'status': game_status,
+                'venue': venue_name,
+                'game_time': game_time,
+                'game_time_formatted': convert_utc_to_edt(game_time) if game_time else None,
+                'home_team': team_names.get('home'),
+                'away_team': team_names.get('away'),
+            },
+            'requested_team': {
+                'abbreviation': team_abbr,
+                'is_home': is_home,
+            },
+            'pitchers': pitchers,
+            'lineup': lineup_data,
+            'lineup_error': lineup_error,
+            'umpires': umpires,
+        }
+
+        return render_template(
+            'lineup.html',
+            data=response_data,
+            format_pitcher_info=format_pitcher_info,
+            format_player_info=format_player_info,
+        )
+
+    except Exception as e:
+        logger.exception(f"Error loading homepage: {e}")
+        return render_template('no_game.html', team=team_abbr, error=str(e))
+
+
+@app.route('/search')
+def search():
+    """Team and date selector form."""
     return render_template('index.html', teams=sorted(MLB_TEAMS.keys()))
 
 

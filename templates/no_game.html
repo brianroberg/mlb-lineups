@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}MLB Lineups{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 40px;">
+    {% if error %}
+    <h2>Something went wrong</h2>
+    <p>Unable to load lineup information. Please try again later.</p>
+    {% else %}
+    <h2>No Game Today</h2>
+    <p>The {{ team }} don't have a game scheduled today.</p>
+    {% endif %}
+    <p style="margin-top: 20px;">
+        <a href="/search">Look up another team or date</a>
+    </p>
+</div>
+{% endblock %}
