@@ -33,9 +33,9 @@ I enjoy scoring baseball games while watching on TV, which means I need starting
 
 2. Install dependencies:
    ```bash
-   uv sync
+   uv sync --frozen
    ```
-   This creates a `.venv` directory automatically and installs all runtime and dev dependencies.
+   This creates a `.venv` directory automatically and installs all runtime and dev dependencies from the lock file.
 
 ## Usage
 
@@ -49,7 +49,7 @@ The server starts at `http://localhost:5000`
 
 **Production:**
 ```bash
-uv sync --group prod
+uv sync --frozen --group prod
 uv run gunicorn -w 4 -b 0.0.0.0:5000 app:app
 ```
 

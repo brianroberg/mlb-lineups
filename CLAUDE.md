@@ -3,8 +3,9 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Build/Test Commands
-- Install all dependencies (runtime + dev): `uv sync`
-- Install with production server: `uv sync --group prod`
+- Install all dependencies (runtime + dev): `uv sync --frozen`
+- Install with production server: `uv sync --frozen --group prod`
+- Update dependencies (re-resolve and regenerate lock file): `uv sync`
 - Add a new runtime dependency: `uv add <package>`
 - Add a new dev dependency: `uv add --group dev <package>`
 - Run Flask app (development): `uv run python app.py`
@@ -18,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Running the App
 - Development server: `uv run python app.py` (runs on http://localhost:5000)
-- Production: `uv sync --group prod && uv run gunicorn -w 4 -b 0.0.0.0:5000 app:app`
+- Production: `uv sync --frozen --group prod && uv run gunicorn -w 4 -b 0.0.0.0:5000 app:app`
 
 ### API Endpoints
 - `GET /api/lineup?team=NYM&date=2025-04-15` - Get lineup data as JSON
