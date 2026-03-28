@@ -1,8 +1,13 @@
 services:
   app:
     build: .
-    ports:
-      - "5001:5000"
+    container_name: mlb-lineups
     environment:
       - WORKERS=2
     restart: unless-stopped
+    networks:
+      - caddy_net
+
+networks:
+  caddy_net:
+    external: true
