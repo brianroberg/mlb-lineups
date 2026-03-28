@@ -9,6 +9,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mlb.api_client import (
     get_adjacent_games,
+    get_adjacent_games_by_date,
     get_lineup,
     get_pitcher_details,
     get_probable_pitchers,
@@ -16,6 +17,7 @@ from mlb.api_client import (
     get_umpires,
 )
 from mlb.cache import clear_cache
+from mlb.formatters import convert_utc_to_edt
 from mlb.teams import MLB_TEAMS, get_team_id, is_valid_team
 
 
@@ -358,6 +360,78 @@ class TestGetAdjacentGames:
 
         assert prev_game is None
         assert next_game is None
+
+
+@pytest.mark.unit
+class TestGetAdjacentGamesByDate:
+    """Tests for get_adjacent_games_by_date (no-game-today navigation)"""
+
+    @patch('statsapi.schedule')
+    def test_finds_prev_and_next_around_off_day(self, mock_schedule):
+        """Test finding nearest games when there's no game on the given date"""
+        mock_schedule.return_value = [
+            {'game_id': 100, 'game_date': '2025-04-14', 'game_num': 1, 'doubleheader': 'N'},
+            {'game_id': 300, 'game_date': '2025-04-17', 'game_num': 1, 'doubleheader': 'N'},
+        ]
+
+        prev_game, next_game = get_adjacent_games_by_date(121, '2025-04-15')
+
+        assert prev_game == {'date': '2025-04-14', 'game_num': 1}
+        assert next_game == {'date': '2025-04-17', 'game_num': 1}
+
+    @patch('statsapi.schedule')
+    def test_no_previous_game(self, mock_schedule):
+        """Test when there are only future games"""
+        mock_schedule.return_value = [
+            {'game_id': 300, 'game_date': '2025-04-17', 'game_num': 1, 'doubleheader': 'N'},
+        ]
+
+        prev_game, next_game = get_adjacent_games_by_date(121, '2025-04-15')
+
+        assert prev_game is None
+        assert next_game == {'date': '2025-04-17', 'game_num': 1}
+
+    @patch('statsapi.schedule')
+    def test_no_next_game(self, mock_schedule):
+        """Test when there are only past games"""
+        mock_schedule.return_value = [
+            {'game_id': 100, 'game_date': '2025-04-14', 'game_num': 1, 'doubleheader': 'N'},
+        ]
+
+        prev_game, next_game = get_adjacent_games_by_date(121, '2025-04-15')
+
+        assert prev_game == {'date': '2025-04-14', 'game_num': 1}
+        assert next_game is None
+
+    @patch('statsapi.schedule')
+    def test_api_error_returns_none(self, mock_schedule):
+        """Test that API errors return None for both games"""
+        mock_schedule.side_effect = Exception("API Error")
+
+        prev_game, next_game = get_adjacent_games_by_date(121, '2025-04-15')
+
+        assert prev_game is None
+        assert next_game is None
+
+
+@pytest.mark.unit
+class TestConvertUtcToEdt:
+    """Tests for date inclusion in convert_utc_to_edt"""
+
+    def test_includes_date(self):
+        """Test that conversion includes the date"""
+        result = convert_utc_to_edt('2025-04-15T18:10:00Z')
+        assert 'Apr' in result
+        assert '15' in result
+
+    def test_includes_time(self):
+        """Test that conversion still includes the time"""
+        result = convert_utc_to_edt('2025-04-15T18:10:00Z')
+        assert 'PM' in result or 'AM' in result
+
+    def test_empty_string_for_none(self):
+        """Test that None input returns empty string"""
+        assert convert_utc_to_edt(None) == ''
 
 
 @pytest.mark.unit

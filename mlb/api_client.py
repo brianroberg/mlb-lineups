@@ -133,6 +133,45 @@ def get_adjacent_games(
         return None, None
 
 
+def get_adjacent_games_by_date(
+    team_id: int,
+    date: str,
+) -> tuple[dict | None, dict | None]:
+    """
+    Find the most recent past game and next upcoming game for a team
+    relative to a date with no game. Used for navigation on off-days.
+
+    Args:
+        team_id: The MLB team ID
+        date: The off-day date in YYYY-MM-DD format
+
+    Returns:
+        Tuple of (prev_game, next_game) where each is either None or
+        a dict with 'date' and 'game_num' keys
+    """
+    try:
+        current_date = datetime.strptime(date, '%Y-%m-%d')
+        start = (current_date - timedelta(days=30)).strftime('%Y-%m-%d')
+        end = (current_date + timedelta(days=30)).strftime('%Y-%m-%d')
+
+        games = statsapi.schedule(start_date=start, end_date=end, team=team_id, sportId=1)
+
+        prev_game = None
+        next_game = None
+        for game in games:
+            game_date = game['game_date']
+            if game_date < date:
+                prev_game = {'date': game_date, 'game_num': game['game_num']}
+            elif game_date > date:
+                if next_game is None:
+                    next_game = {'date': game_date, 'game_num': game['game_num']}
+
+        return prev_game, next_game
+    except Exception as e:
+        logger.error(f"Error fetching adjacent games by date: {e}")
+        return None, None
+
+
 @cached(86400)  # 24 hours - player data rarely changes
 def get_player_details(player_id: int) -> dict[str, str] | None:
     """

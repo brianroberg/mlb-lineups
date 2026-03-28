@@ -8,6 +8,7 @@ from flask_cors import CORS
 
 from mlb.api_client import (
     get_adjacent_games,
+    get_adjacent_games_by_date,
     get_lineup,
     get_probable_pitchers,
     get_team_game,
@@ -35,7 +36,13 @@ def index():
         game_id, game_status, venue_name, team_names, game_time_or_error = get_team_game(team_id)
 
         if game_id is None:
-            return render_template('no_game.html', team=team_abbr)
+            today = get_today_date_eastern()
+            prev_game, next_game = get_adjacent_games_by_date(team_id, today)
+            return render_template(
+                'no_game.html',
+                team=team_abbr,
+                nav={'prev': prev_game, 'next': next_game},
+            )
 
         lineup_data, lineup_error = get_lineup(game_id, team_id)
         pitchers = get_probable_pitchers(game_id, game_status, team_id)

@@ -11,8 +11,21 @@
     <h2>No Game Today</h2>
     <p>The {{ team }} don't have a game scheduled today.</p>
     {% endif %}
-    <p style="margin-top: 20px;">
-        <a href="/search">Look up another team or date</a>
-    </p>
 </div>
+
+<nav style="margin-top: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <div>
+        {% if nav and nav.prev %}
+        <a href="/api/lineup?team={{ team }}&date={{ nav.prev.date }}&game_num={{ nav.prev.game_num }}&format=html">&larr; Previous game</a>
+        {% endif %}
+    </div>
+    <div>
+        <a href="/search">Look up another team or date</a>
+    </div>
+    <div>
+        {% if nav and nav.next %}
+        <a href="/api/lineup?team={{ team }}&date={{ nav.next.date }}&game_num={{ nav.next.game_num }}&format=html">Next game &rarr;</a>
+        {% endif %}
+    </div>
+</nav>
 {% endblock %}
