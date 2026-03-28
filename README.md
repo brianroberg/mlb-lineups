@@ -20,27 +20,22 @@ I enjoy scoring baseball games while watching on TV, which means I need starting
 
 ### Prerequisites
 
-- Python 3.10+
-- pip
+- Python 3.14+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ### Setup
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/mlb-lineups.git
+   git clone https://github.com/brianroberg/mlb-lineups.git
    cd mlb-lineups
    ```
 
-2. Create and activate a virtual environment:
+2. Install dependencies:
    ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   uv sync
    ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+   This creates a `.venv` directory automatically and installs all runtime and dev dependencies.
 
 ## Usage
 
@@ -48,13 +43,14 @@ I enjoy scoring baseball games while watching on TV, which means I need starting
 
 **Development:**
 ```bash
-python app.py
+uv run python app.py
 ```
 The server starts at `http://localhost:5000`
 
 **Production:**
 ```bash
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
+uv sync --group prod
+uv run gunicorn -w 4 -b 0.0.0.0:5000 app:app
 ```
 
 ### Web Interface
@@ -233,22 +229,22 @@ Player and pitcher details are cached for 24 hours.
 
 ```bash
 # Run all tests
-pytest
+uv run pytest
 
 # Run unit tests only
-pytest -m unit
+uv run pytest -m unit
 
 # Run integration tests only
-pytest -m integration
+uv run pytest -m integration
 
 # Run with verbose output
-pytest -v
+uv run pytest -v
 ```
 
 ### Linting
 
 ```bash
-ruff check app.py mlb/*.py
+uv run ruff check app.py mlb/*.py
 ```
 
 ### Project Structure
@@ -263,7 +259,7 @@ mlb-lineups/
 │   └── teams.py        # Team constants and validation
 ├── templates/          # Jinja2 HTML templates
 ├── tests/              # Test suite
-└── requirements.txt    # Python dependencies
+└── pyproject.toml      # Project metadata and dependencies
 ```
 
 ## Note
