@@ -19,7 +19,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Running the App
 - Development server: `uv run python app.py` (runs on http://localhost:5000)
-- Production: `uv sync --frozen --group prod && uv run gunicorn -w 4 -b 0.0.0.0:5000 app:app`
+- Production (Docker): `docker compose up -d` (runs on http://localhost:5001)
+- Production (local): `uv sync --frozen --group prod && uv run gunicorn -w 2 -b 0.0.0.0:5000 app:app`
+- Rebuild container: `docker compose up -d --build`
 
 ### API Endpoints
 - `GET /api/lineup?team=NYM&date=2025-04-15` - Get lineup data as JSON
@@ -39,6 +41,8 @@ Query Parameters:
   - `formatters.py` - Display formatting helpers
 - `templates/` - Jinja2 HTML templates
 - `tests/` - Test suite (unit and integration tests)
+- `Dockerfile` - Container image definition
+- `compose.yaml` - Docker Compose configuration
 
 ## Code Style Guidelines
 - Follow PEP 8 conventions for Python code

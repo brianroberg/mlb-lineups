@@ -1,0 +1,8 @@
+services:
+  app:
+    build: .
+    ports:
+      - "5001:5000"
+    environment:
+      - WORKERS=2
+    restart: unless-stopped

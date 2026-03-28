@@ -1,0 +1,11 @@
+.venv/
+.git/
+.gitignore
+.ruff_cache/
+.pytest_cache/
+__pycache__/
+tests/
+*.pyc
+.DS_Store
+.idea/
+.vscode/
