@@ -1,7 +1,7 @@
 """MLB Stats API client - all data fetching functions."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 import pytz
@@ -30,10 +30,11 @@ def get_today_date_eastern() -> str:
     return datetime.now(eastern).strftime('%Y-%m-%d')
 
 
-@cached(lambda team_id, date=None: get_ttl_for_game_status('Scheduled'))
+@cached(lambda team_id, date=None, game_num=None: get_ttl_for_game_status('Scheduled'))
 def get_team_game(
     team_id: int,
-    date: str | None = None
+    date: str | None = None,
+    game_num: int | None = None,
 ) -> tuple[int | None, str | None, str | None, dict[str, str] | None, str]:
     """
     Fetch a team's game information from the MLB Stats API for a specific date.
@@ -41,6 +42,7 @@ def get_team_game(
     Args:
         team_id: The MLB team ID
         date: Date in YYYY-MM-DD format. Defaults to today's date.
+        game_num: Game number for doubleheaders (1 or 2). Defaults to first game.
 
     Returns:
         Tuple of (game_id, game_status, venue_name, team_names, game_time_or_error)
@@ -56,6 +58,11 @@ def get_team_game(
             return None, None, None, None, "No game scheduled for the selected team on this date."
 
         game = schedule_data[0]
+        if game_num is not None:
+            for g in schedule_data:
+                if g.get('game_num') == game_num:
+                    game = g
+                    break
         game_id = game['game_id']
         game_status = game['status']
 
@@ -71,6 +78,98 @@ def get_team_game(
     except Exception as e:
         logger.error(f"Error fetching game data: {e}")
         return None, None, None, None, f"Error fetching game data: {e}"
+
+
+def get_adjacent_games(
+    team_id: int,
+    date: str,
+    game_id: int,
+) -> tuple[dict | None, dict | None]:
+    """
+    Find the previous and next games for a team relative to a given game.
+
+    Searches ±30 days around the given date for the team's schedule, then
+    finds the game immediately before and after the current game_id.
+
+    Args:
+        team_id: The MLB team ID
+        date: Date of the current game in YYYY-MM-DD format
+        game_id: The game ID of the current game
+
+    Returns:
+        Tuple of (prev_game, next_game) where each is either None or
+        a dict with 'date' and 'game_num' keys
+    """
+    try:
+        current_date = datetime.strptime(date, '%Y-%m-%d')
+        start = (current_date - timedelta(days=30)).strftime('%Y-%m-%d')
+        end = (current_date + timedelta(days=30)).strftime('%Y-%m-%d')
+
+        games = statsapi.schedule(start_date=start, end_date=end, team=team_id, sportId=1)
+
+        # Find the index of the current game
+        current_idx = None
+        for i, game in enumerate(games):
+            if game['game_id'] == game_id:
+                current_idx = i
+                break
+
+        if current_idx is None:
+            return None, None
+
+        prev_game = None
+        if current_idx > 0:
+            g = games[current_idx - 1]
+            prev_game = {'date': g['game_date'], 'game_num': g['game_num']}
+
+        next_game = None
+        if current_idx < len(games) - 1:
+            g = games[current_idx + 1]
+            next_game = {'date': g['game_date'], 'game_num': g['game_num']}
+
+        return prev_game, next_game
+    except Exception as e:
+        logger.error(f"Error fetching adjacent games: {e}")
+        return None, None
+
+
+def get_adjacent_games_by_date(
+    team_id: int,
+    date: str,
+) -> tuple[dict | None, dict | None]:
+    """
+    Find the most recent past game and next upcoming game for a team
+    relative to a date with no game. Used for navigation on off-days.
+
+    Args:
+        team_id: The MLB team ID
+        date: The off-day date in YYYY-MM-DD format
+
+    Returns:
+        Tuple of (prev_game, next_game) where each is either None or
+        a dict with 'date' and 'game_num' keys
+    """
+    try:
+        current_date = datetime.strptime(date, '%Y-%m-%d')
+        start = (current_date - timedelta(days=30)).strftime('%Y-%m-%d')
+        end = (current_date + timedelta(days=30)).strftime('%Y-%m-%d')
+
+        games = statsapi.schedule(start_date=start, end_date=end, team=team_id, sportId=1)
+
+        prev_game = None
+        next_game = None
+        for game in games:
+            game_date = game['game_date']
+            if game_date < date:
+                prev_game = {'date': game_date, 'game_num': game['game_num']}
+            elif game_date > date:
+                if next_game is None:
+                    next_game = {'date': game_date, 'game_num': game['game_num']}
+
+        return prev_game, next_game
+    except Exception as e:
+        logger.error(f"Error fetching adjacent games by date: {e}")
+        return None, None
 
 
 @cached(86400)  # 24 hours - player data rarely changes

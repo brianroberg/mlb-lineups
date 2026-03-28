@@ -19,18 +19,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Running the App
 - Development server: `uv run python app.py` (runs on http://localhost:5000)
-- Production (Docker): `docker compose up -d` (runs on http://localhost:5001)
+- Production (Docker): `docker compose up -d` (accessible via Caddy reverse proxy)
 - Production (local): `uv sync --frozen --group prod && uv run gunicorn -w 2 -b 0.0.0.0:5000 app:app`
 - Rebuild container: `docker compose up -d --build`
 
 ### API Endpoints
+- `GET /` - Homepage showing today's Mets lineup with prev/next game navigation
+- `GET /search` - Team and date selector form
 - `GET /api/lineup?team=NYM&date=2025-04-15` - Get lineup data as JSON
 - `GET /api/lineup?team=NYM&format=html` - Get lineup data as HTML page
-- `GET /` - Landing page with team selector form
 
 Query Parameters:
 - `team` (required): 3-letter team abbreviation (e.g., NYM, LAD, NYY)
 - `date` (optional): Date in YYYY-MM-DD format, defaults to today
+- `game_num` (optional): Game number for doubleheaders (1 or 2)
 - `format` (optional): Response format, 'json' (default) or 'html'
 
 ## Project Structure

@@ -51,7 +51,7 @@ The server starts at `http://localhost:5000`
 ```bash
 docker compose up -d
 ```
-The server starts at `http://localhost:5001`
+The app is accessible through your Caddy reverse proxy.
 
 **Production (local):**
 ```bash
@@ -61,7 +61,7 @@ uv run gunicorn -w 2 -b 0.0.0.0:5000 app:app
 
 ### Web Interface
 
-Open `http://localhost:5000` in your browser to access the team selector form.
+Open `http://localhost:5000` in your browser. The homepage shows today's Mets lineup with previous/next game navigation. Use `/search` to look up other teams or dates.
 
 ## API Reference
 
@@ -79,6 +79,7 @@ GET /api/lineup
 |-----------|--------|----------|-------------|
 | `team`    | string | Yes      | Team abbreviation (e.g., `NYM`, `LAD`, `NYY`) |
 | `date`    | string | No       | Game date in `YYYY-MM-DD` format. Defaults to today. |
+| `game_num`| integer| No       | Game number for doubleheaders (1 or 2). Defaults to first game. |
 | `format`  | string | No       | Response format: `json` (default) or `html` |
 
 #### Example Requests
@@ -103,7 +104,7 @@ curl "http://localhost:5000/api/lineup?team=NYY&format=html"
     "status": "Final",
     "venue": "Target Field",
     "game_time": "2025-04-15T23:40:00Z",
-    "game_time_formatted": "7:40 PM EDT",
+    "game_time_formatted": "Tue, Apr 15, 7:40 PM EDT",
     "home_team": "Minnesota Twins",
     "away_team": "New York Mets"
   },
@@ -150,7 +151,11 @@ curl "http://localhost:5000/api/lineup?team=NYY&format=html"
       "official": { "fullName": "Adam Hamari" },
       "officialType": "Home Plate"
     }
-  ]
+  ],
+  "nav": {
+    "prev": { "date": "2025-04-14", "game_num": 1 },
+    "next": { "date": "2025-04-16", "game_num": 1 }
+  }
 }
 ```
 
@@ -196,13 +201,21 @@ curl "http://localhost:5000/api/cache-stats"
 }
 ```
 
-### Landing Page
+### Homepage
 
 ```
 GET /
 ```
 
-Returns an HTML page with a team selector form for interactive use.
+Returns today's Mets lineup as HTML with previous/next game navigation. If there is no game today, shows a friendly message with links to adjacent games.
+
+### Team/Date Search
+
+```
+GET /search
+```
+
+Returns an HTML page with a team selector form and date picker for looking up any team's lineup.
 
 ## Supported Teams
 
