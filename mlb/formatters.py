@@ -62,6 +62,6 @@ def convert_utc_to_edt(utc_time_str: str | None) -> str:
         utc_time = datetime.fromisoformat(utc_time_str.replace('Z', '+00:00'))
         eastern = pytz.timezone('US/Eastern')
         edt_time = utc_time.astimezone(eastern)
-        return edt_time.strftime('%b %-d, %-I:%M %p EDT')
+        return edt_time.strftime('%a, %b %-d, %-I:%M %p EDT')
     except Exception:
         return ''

@@ -418,9 +418,10 @@ class TestGetAdjacentGamesByDate:
 class TestConvertUtcToEdt:
     """Tests for date inclusion in convert_utc_to_edt"""
 
-    def test_includes_date(self):
-        """Test that conversion includes the date"""
+    def test_includes_date_and_day_of_week(self):
+        """Test that conversion includes the day of week and date"""
         result = convert_utc_to_edt('2025-04-15T18:10:00Z')
+        assert 'Tue' in result
         assert 'Apr' in result
         assert '15' in result
 
