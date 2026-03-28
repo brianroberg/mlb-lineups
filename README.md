@@ -27,7 +27,7 @@ I enjoy scoring baseball games while watching on TV, which means I need starting
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/mlb-lineups.git
+   git clone https://github.com/brianroberg/mlb-lineups.git
    cd mlb-lineups
    ```
 
