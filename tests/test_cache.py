@@ -1,18 +1,19 @@
 """Tests for the caching and rate limiting module."""
 
-import time
 import threading
+import time
+
 import pytest
 
 from mlb.cache import (
+    TTL_CONFIG,
     CacheEntry,
     CacheManager,
     RateLimiter,
     cached,
+    clear_cache,
     generate_cache_key,
     get_ttl_for_game_status,
-    clear_cache,
-    TTL_CONFIG,
 )
 
 

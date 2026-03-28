@@ -1,20 +1,21 @@
-import pytest
 import json
-from unittest.mock import patch, MagicMock
-import sys
 import os
+import sys
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 # Add the parent directory to the path to allow importing the main modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from mlb.teams import MLB_TEAMS, is_valid_team, get_team_id
 from mlb.api_client import (
-    get_team_game,
     get_lineup,
     get_pitcher_details,
     get_probable_pitchers,
-    get_umpires
+    get_team_game,
+    get_umpires,
 )
 from mlb.cache import clear_cache
+from mlb.teams import MLB_TEAMS, get_team_id, is_valid_team
 
 
 @pytest.fixture(autouse=True)

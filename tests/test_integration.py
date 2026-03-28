@@ -1,8 +1,9 @@
-import pytest
+import json
 import os
 import sys
 from unittest.mock import patch
-import json
+
+import pytest
 
 # Add the parent directory to the path to allow importing the main modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
