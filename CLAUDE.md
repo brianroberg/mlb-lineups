@@ -3,19 +3,22 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Build/Test Commands
-- Install dependencies: `pip install -r requirements.txt`
-- Run Flask app (development): `python app.py`
-- Run all tests: `pytest`
-- Run unit tests only: `pytest -m unit`
-- Run integration tests only: `pytest -m integration`
-- Run specific test: `pytest tests/test_unit.py::TestMLBTeams::test_mlb_teams_has_30_teams`
-- Lint code: `ruff check app.py mlb/*.py`
+- Install all dependencies (runtime + dev): `uv sync`
+- Install with production server: `uv sync --group prod`
+- Add a new runtime dependency: `uv add <package>`
+- Add a new dev dependency: `uv add --group dev <package>`
+- Run Flask app (development): `uv run python app.py`
+- Run all tests: `uv run pytest`
+- Run unit tests only: `uv run pytest -m unit`
+- Run integration tests only: `uv run pytest -m integration`
+- Run specific test: `uv run pytest tests/test_unit.py::TestMLBTeams::test_mlb_teams_has_30_teams`
+- Lint code: `uv run ruff check app.py mlb/*.py`
 
 ## Flask Web Application
 
 ### Running the App
-- Development server: `python app.py` (runs on http://localhost:5000)
-- Production: `gunicorn -w 4 -b 0.0.0.0:5000 app:app`
+- Development server: `uv run python app.py` (runs on http://localhost:5000)
+- Production: `uv sync --group prod && uv run gunicorn -w 4 -b 0.0.0.0:5000 app:app`
 
 ### API Endpoints
 - `GET /api/lineup?team=NYM&date=2025-04-15` - Get lineup data as JSON
@@ -45,4 +48,4 @@ Query Parameters:
 - Use descriptive variable names
 - Organize constants at the top of modules
 - Maintain test coverage for new features
-- IMPORTANT: Always run the Ruff linter before committing changes: `ruff check --fix app.py mlb/*.py`
+- IMPORTANT: Always run the Ruff linter before committing changes: `uv run ruff check --fix app.py mlb/*.py`
