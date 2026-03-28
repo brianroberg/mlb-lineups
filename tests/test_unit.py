@@ -8,6 +8,7 @@ import pytest
 # Add the parent directory to the path to allow importing the main modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mlb.api_client import (
+    get_adjacent_games,
     get_lineup,
     get_pitcher_details,
     get_probable_pitchers,
@@ -272,6 +273,91 @@ class TestGetTeamGame:
         assert game_status is None
         assert venue_name is None
         assert "Error" in error_msg
+
+
+@pytest.mark.unit
+class TestGetAdjacentGames:
+    """Tests for the get_adjacent_games function"""
+
+    @patch('statsapi.schedule')
+    def test_returns_prev_and_next_game(self, mock_schedule):
+        """Test finding previous and next games around a given date"""
+        mock_schedule.return_value = [
+            {'game_id': 100, 'game_date': '2025-04-14', 'game_num': 1, 'doubleheader': 'N'},
+            {'game_id': 200, 'game_date': '2025-04-15', 'game_num': 1, 'doubleheader': 'N'},
+            {'game_id': 300, 'game_date': '2025-04-17', 'game_num': 1, 'doubleheader': 'N'},
+        ]
+
+        prev_game, next_game = get_adjacent_games(121, '2025-04-15', 200)
+
+        assert prev_game == {'date': '2025-04-14', 'game_num': 1}
+        assert next_game == {'date': '2025-04-17', 'game_num': 1}
+
+    @patch('statsapi.schedule')
+    def test_no_previous_game(self, mock_schedule):
+        """Test when there is no previous game (start of season)"""
+        mock_schedule.return_value = [
+            {'game_id': 200, 'game_date': '2025-04-15', 'game_num': 1, 'doubleheader': 'N'},
+            {'game_id': 300, 'game_date': '2025-04-17', 'game_num': 1, 'doubleheader': 'N'},
+        ]
+
+        prev_game, next_game = get_adjacent_games(121, '2025-04-15', 200)
+
+        assert prev_game is None
+        assert next_game == {'date': '2025-04-17', 'game_num': 1}
+
+    @patch('statsapi.schedule')
+    def test_no_next_game(self, mock_schedule):
+        """Test when there is no next game (end of season)"""
+        mock_schedule.return_value = [
+            {'game_id': 100, 'game_date': '2025-04-14', 'game_num': 1, 'doubleheader': 'N'},
+            {'game_id': 200, 'game_date': '2025-04-15', 'game_num': 1, 'doubleheader': 'N'},
+        ]
+
+        prev_game, next_game = get_adjacent_games(121, '2025-04-15', 200)
+
+        assert prev_game == {'date': '2025-04-14', 'game_num': 1}
+        assert next_game is None
+
+    @patch('statsapi.schedule')
+    def test_doubleheader_game1_to_game2(self, mock_schedule):
+        """Test navigation from game 1 to game 2 of a doubleheader"""
+        mock_schedule.return_value = [
+            {'game_id': 100, 'game_date': '2025-04-14', 'game_num': 1, 'doubleheader': 'N'},
+            {'game_id': 200, 'game_date': '2025-04-15', 'game_num': 1, 'doubleheader': 'S'},
+            {'game_id': 201, 'game_date': '2025-04-15', 'game_num': 2, 'doubleheader': 'S'},
+            {'game_id': 300, 'game_date': '2025-04-17', 'game_num': 1, 'doubleheader': 'N'},
+        ]
+
+        prev_game, next_game = get_adjacent_games(121, '2025-04-15', 200)
+
+        assert prev_game == {'date': '2025-04-14', 'game_num': 1}
+        assert next_game == {'date': '2025-04-15', 'game_num': 2}
+
+    @patch('statsapi.schedule')
+    def test_doubleheader_game2_to_next_day(self, mock_schedule):
+        """Test navigation from game 2 of a doubleheader to next day"""
+        mock_schedule.return_value = [
+            {'game_id': 100, 'game_date': '2025-04-14', 'game_num': 1, 'doubleheader': 'N'},
+            {'game_id': 200, 'game_date': '2025-04-15', 'game_num': 1, 'doubleheader': 'S'},
+            {'game_id': 201, 'game_date': '2025-04-15', 'game_num': 2, 'doubleheader': 'S'},
+            {'game_id': 300, 'game_date': '2025-04-17', 'game_num': 1, 'doubleheader': 'N'},
+        ]
+
+        prev_game, next_game = get_adjacent_games(121, '2025-04-15', 201)
+
+        assert prev_game == {'date': '2025-04-15', 'game_num': 1}
+        assert next_game == {'date': '2025-04-17', 'game_num': 1}
+
+    @patch('statsapi.schedule')
+    def test_api_error_returns_none(self, mock_schedule):
+        """Test that API errors return None for both games"""
+        mock_schedule.side_effect = Exception("API Error")
+
+        prev_game, next_game = get_adjacent_games(121, '2025-04-15', 200)
+
+        assert prev_game is None
+        assert next_game is None
 
 
 @pytest.mark.unit

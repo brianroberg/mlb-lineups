@@ -109,8 +109,20 @@
 </section>
 {% endif %}
 
-<p style="margin-top: 30px;">
-    <a href="/search">Look up another team or date</a> |
-    <a href="/api/lineup?team={{ data.requested_team.abbreviation }}{% if request.args.get('date') %}&date={{ request.args.get('date') }}{% endif %}">View as JSON</a>
-</p>
+<nav style="margin-top: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <div>
+        {% if data.nav and data.nav.prev %}
+        <a href="/api/lineup?team={{ data.requested_team.abbreviation }}&date={{ data.nav.prev.date }}&game_num={{ data.nav.prev.game_num }}&format=html">&larr; Previous game</a>
+        {% endif %}
+    </div>
+    <div>
+        <a href="/search">Look up another team or date</a> |
+        <a href="/api/lineup?team={{ data.requested_team.abbreviation }}{% if request.args.get('date') %}&date={{ request.args.get('date') }}{% endif %}{% if request.args.get('game_num') %}&game_num={{ request.args.get('game_num') }}{% endif %}">View as JSON</a>
+    </div>
+    <div>
+        {% if data.nav and data.nav.next %}
+        <a href="/api/lineup?team={{ data.requested_team.abbreviation }}&date={{ data.nav.next.date }}&game_num={{ data.nav.next.game_num }}&format=html">Next game &rarr;</a>
+        {% endif %}
+    </div>
+</nav>
 {% endblock %}

@@ -7,9 +7,11 @@ from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 
 from mlb.api_client import (
+    get_adjacent_games,
     get_lineup,
     get_probable_pitchers,
     get_team_game,
+    get_today_date_eastern,
     get_umpires,
 )
 from mlb.cache import cache_manager, rate_limiter
@@ -45,6 +47,9 @@ def index():
         ) if team_names else False
 
         game_time = game_time_or_error
+        today = get_today_date_eastern()
+        prev_game, next_game = get_adjacent_games(team_id, today, game_id)
+
         response_data = {
             'game': {
                 'id': game_id,
@@ -63,6 +68,10 @@ def index():
             'lineup': lineup_data,
             'lineup_error': lineup_error,
             'umpires': umpires,
+            'nav': {
+                'prev': prev_game,
+                'next': next_game,
+            },
         }
 
         return render_template(
@@ -102,6 +111,7 @@ def get_lineup_api():
     """
     team_abbr = request.args.get('team', '').upper()
     date = request.args.get('date')
+    game_num = request.args.get('game_num', type=int)
     output_format = request.args.get('format', 'json').lower()
 
     # Validate team parameter
@@ -127,7 +137,9 @@ def get_lineup_api():
 
     try:
         # Fetch game information
-        game_id, game_status, venue_name, team_names, game_time_or_error = get_team_game(team_id, date)
+        game_id, game_status, venue_name, team_names, game_time_or_error = get_team_game(
+            team_id, date, game_num
+        )
 
         if game_id is None:
             # When game_id is None, game_time_or_error contains the error message
@@ -146,6 +158,9 @@ def get_lineup_api():
 
         # Build response data (game_time_or_error contains game_time when successful)
         game_time = game_time_or_error
+        game_date = date or get_today_date_eastern()
+        prev_game, next_game = get_adjacent_games(team_id, game_date, game_id)
+
         response_data = {
             'game': {
                 'id': game_id,
@@ -164,6 +179,10 @@ def get_lineup_api():
             'lineup': lineup_data,
             'lineup_error': lineup_error,
             'umpires': umpires,
+            'nav': {
+                'prev': prev_game,
+                'next': next_game,
+            },
         }
 
         if output_format == 'html':
